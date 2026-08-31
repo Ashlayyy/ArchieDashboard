@@ -11,6 +11,7 @@
   },
   "extends": ["airbnb-base", "airbnb-typescript/base", "prettier"],
   "plugins": ["prettier", "import"],
+  "ignorePatterns": ["**/*.test.ts", "dist/**"],
   "rules": {
     "linebreak-style": ["error", "windows"],
     "prettier/prettier": "warn"

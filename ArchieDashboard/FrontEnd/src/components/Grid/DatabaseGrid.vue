@@ -15,9 +15,8 @@
       ></v-text-field>
       <v-btn
         :disabled="disableCompareButton"
-        ariant="tonal"
+        variant="tonal"
         @click="sendToCompare"
-        :style="'z-index: -999 !important;'"
       >
         {{ $t('buttonTekst.compare') }}
       </v-btn>
@@ -109,15 +108,10 @@ export default {
       });
     },
     async sendToCompare() {
-      let compareRoute = '';
-      for (let i = 0; i < this.selectedItems.length; i++) {
-        compareRoute =
-          compareRoute +
-          `${i === this.selectedItems.length - 1 ? `${this.selectedItems[i].Company}` : `${this.selectedItems[i].Company}-`}`;
-      }
+      const companies = this.selectedItems.map((item: { Company: string }) => item.Company).filter(Boolean);
       this.$router.push({
         name: 'database-compare',
-        params: { databases: compareRoute }
+        query: { companies: companies.join(',') }
       });
     },
     async tableData() {
@@ -146,7 +140,6 @@ export default {
         this.items = await pushDataInArray(this?.data);
         return true;
       } catch (err) {
-        console.log(err);
         return false;
       }
     }

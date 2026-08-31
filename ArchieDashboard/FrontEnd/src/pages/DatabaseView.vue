@@ -89,6 +89,10 @@
       />
     </div>
   </main>
+  <div v-else-if="loadError" class="dashboard_loading">
+    <p>{{ $t('select.geenResultaat') }}</p>
+    <v-btn variant="tonal" @click="retryLoad">{{ $t('getBackButton') }}</v-btn>
+  </div>
   <div v-else class="dashboard_loading">
     <loadingCircle />
   </div>
@@ -117,6 +121,7 @@ import { update } from '../stores/update';
 import differenceTwoDates from '../utils/Transforming/differenceTwoDates';
 
 const loadingDone = ref(false);
+const loadError = ref(false);
 const Configs: IConfigs = reactive({
   charts: {
     totalGigabytes: [],
@@ -161,6 +166,7 @@ const filterStore = useFilterStore();
 const { t } = useI18n();
 
 const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
+  loadError.value = false;
   const pending = push.promise({
     title: 'Loading',
     message: 'Fetching metrics...',
@@ -268,22 +274,14 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
     for (let i = 0; i < metrics.data.chartData.GB.length; i++) {
       if (metrics.data.chartData.ACT_US.length !== metrics.data.chartData.GB.length) {
         metrics.data.chartData.ACT_US.push({
-          x: String(
-            metrics.data.chartData.GB[
-              i + (metrics.data.chartData.GB.length - metrics.data.chartData.ACT_US.length ?? 0 + 2)
-            ].x
-          ),
+          x: String(metrics.data.chartData.GB[i].x),
           y: 0
         });
       }
 
       if (metrics.data.chartData.US.length !== metrics.data.chartData.GB.length) {
         metrics.data.chartData.US.push({
-          x: String(
-            metrics.data.chartData.GB[
-              i + (metrics.data.chartData.GB.length - metrics.data.chartData.US.length ?? 0 + 2)
-            ].x
-          ),
+          x: String(metrics.data.chartData.GB[i].x),
           y: 0
         });
       }
@@ -351,7 +349,7 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
 
     return true;
   } catch (error: any) {
-    console.error(error);
+    loadError.value = true;
     pending.reject({
       title: 'Error',
       message: 'An error occurred while fetching the metrics. Please try again later.',
@@ -361,6 +359,11 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
     });
     return false;
   }
+};
+
+const retryLoad = async () => {
+  loadingDone.value = false;
+  loadingDone.value = await getMetrics();
 };
 
 // BeforeMount

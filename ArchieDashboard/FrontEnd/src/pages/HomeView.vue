@@ -83,6 +83,10 @@
       <DatabaseGrid :data="gridMetrics" />
     </section>
   </main>
+  <div v-else-if="loadError" class="dashboard_loading">
+    <p>{{ $t('select.geenResultaat') }}</p>
+    <v-btn variant="tonal" @click="retryLoad">{{ $t('getBackButton') }}</v-btn>
+  </div>
   <div v-else class="dashboard_loading">
     <loadingCircle />
   </div>
@@ -113,6 +117,7 @@ import differenceTwoDates from '../utils/Transforming/differenceTwoDates';
 
 const gridMetrics = ref<any>();
 const loadingDone = ref(false);
+const loadError = ref(false);
 const Configs: IConfigs = reactive({
   charts: {
     totalGigabytes: [],
@@ -155,6 +160,7 @@ const isAuthenticated = ref(auth0.isAuthenticated);
 const { t } = useI18n();
 
 const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
+  loadError.value = false;
   const pending = push.promise({
     title: 'Loading',
     message: 'Fetching metrics...',
@@ -271,9 +277,7 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
       if (metrics.data.chartData.ACT_US.length !== metrics.data.chartData.GB.length) {
         metrics.data.chartData.ACT_US.push({
           x: String(
-            metrics.data.chartData.GB[
-              i + (metrics.data.chartData.GB.length - metrics.data.chartData.ACT_US.length ?? 0 + 2)
-            ].x
+            metrics.data.chartData.GB[i].x
           ),
           y: 0
         });
@@ -281,15 +285,7 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
 
       if (metrics.data.chartData.US.length !== metrics.data.chartData.GB.length) {
         metrics.data.chartData.US.push({
-          x: String(
-            metrics.data.chartData.GB[
-              i + (metrics.data.chartData.GB.length - metrics.data.chartData.US.length ?? 0 + 2)
-            ].x
-              ? metrics.data.chartData.GB[
-                  i + (metrics.data.chartData.GB.length - metrics.data.chartData.US.length ?? 0 + 2)
-                ].x
-              : metrics.data.chartData.GB[i].x
-          ),
+          x: String(metrics.data.chartData.GB[i].x),
           y: 0
         });
       }
@@ -338,7 +334,7 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
 
     return true;
   } catch (error: any) {
-    console.error(error);
+    loadError.value = true;
     pending.reject({
       title: 'Error',
       message: 'An error occurred while fetching the metrics. Please try again later.',
@@ -350,38 +346,43 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
   }
 };
 
-// BeforeMount
-onBeforeMount(async () => {
+const loadFromStore = async (): Promise<boolean> => {
+  loadError.value = false;
   loadingDone.value = false;
-  const done = isAuthenticated.value ? await getMetrics() : false;
-  loadingDone.value = done;
-});
-
-watch(update, async () => {
-  loadingDone.value = false;
-  let done = false;
   const dates = filterStore.getSelectedDates();
   const companies = filterStore.getSelectedDatabases();
   if (dates.length > 2) {
-    done = await getMetrics({
+    return getMetrics({
       companies: companies,
       dates: dates.map((date) => differenceTwoDates(date)).reverse()
     });
-  } else if (dates[0] && dates[1]) {
-    const formattedDateOne = differenceTwoDates(dates[0]);
-    const formattedDateTwo = differenceTwoDates(dates[dates.length - 1]);
-
-    done = await getMetrics({
+  }
+  if (dates[0] && dates[1]) {
+    return getMetrics({
       companies: companies,
-      fromDate: formattedDateOne,
-      toDate: formattedDateTwo
-    });
-  } else {
-    done = await getMetrics({
-      companies: companies
+      fromDate: differenceTwoDates(dates[0]),
+      toDate: differenceTwoDates(dates[dates.length - 1])
     });
   }
-  loadingDone.value = done;
+  return getMetrics({
+    companies: companies
+  });
+};
+
+const retryLoad = async () => {
+  loadingDone.value = await loadFromStore();
+};
+
+onBeforeMount(async () => {
+  if (!isAuthenticated.value) {
+    loadError.value = true;
+    return;
+  }
+  loadingDone.value = await loadFromStore();
+});
+
+watch(update, async () => {
+  loadingDone.value = await loadFromStore();
 });
 
 const updateGrowthFilter = (event: string) => {

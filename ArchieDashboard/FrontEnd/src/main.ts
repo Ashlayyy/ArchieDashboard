@@ -8,6 +8,19 @@ import { createVuetify } from 'vuetify';
 import { createNotivue } from 'notivue';
 import { createAuth0 } from '@auth0/auth0-vue';
 import { createVuestic } from 'vuestic-ui';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  TimeScale,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 
 import en from './locales/en';
 import nl from './locales/nl';
@@ -20,6 +33,19 @@ import 'notivue/animations.css';
 import 'notivue/notification-progress.css';
 import '@mdi/font/css/materialdesignicons.css';
 import 'vuestic-ui/css';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  TimeScale,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const app = createApp(App);
 
@@ -55,7 +81,10 @@ app.use(
     domain: import.meta.env.VITE_AUTH_DOMAIN,
     clientId: import.meta.env.VITE_CLIENT_ID,
     authorizationParams: {
-      redirect_uri: window.location.origin
+      redirect_uri: window.location.origin,
+      ...(import.meta.env.VITE_AUTH0_AUDIENCE
+        ? { audience: import.meta.env.VITE_AUTH0_AUDIENCE }
+        : {})
     }
   })
 );

@@ -3,6 +3,7 @@ import { IBackupMetricsService } from '../interfaces/IBackupMetricsService';
 import IBackupMetricsController from '../interfaces/IBackupMetricsController';
 import { ApiRequest } from '../types/Request/ApiRequest';
 import { ApiRequestResult } from '../types/Request/ApiRequestResult';
+import validateMetricsBody from '../../../helpers/validateMetricsBody';
 
 @injectable()
 export default class BackupMetricsController implements IBackupMetricsController {
@@ -10,14 +11,17 @@ export default class BackupMetricsController implements IBackupMetricsController
 
   async metrics(request: ApiRequest): Promise<ApiRequestResult> {
     try {
-      const companies: string[] = request.body?.companies ?? [];
+      const parsed = validateMetricsBody(request.body);
+      if (!parsed.ok) return { status: 400, data: parsed.error };
+
+      const companies = parsed.value.companies ?? [];
       let fromDate: number | undefined;
       let toDate: number | undefined;
       let dates: number[] | undefined;
 
-      if (request.body.fromDate && request.body.toDate && !request.body.dates) {
-        fromDate = request.body?.fromDate;
-        toDate = request.body?.toDate;
+      if (parsed.value.fromDate !== undefined && parsed.value.toDate !== undefined && !parsed.value.dates) {
+        fromDate = parsed.value.fromDate;
+        toDate = parsed.value.toDate;
       } else {
         const lastDate = await this.backupMetricsService.lastDate({
           companies
@@ -28,8 +32,8 @@ export default class BackupMetricsController implements IBackupMetricsController
         }
       }
 
-      if (request.body.dates) {
-        dates = request.body?.dates;
+      if (parsed.value.dates) {
+        dates = parsed.value.dates;
       }
 
       const metrics = await this.backupMetricsService.metrics({
@@ -46,25 +50,28 @@ export default class BackupMetricsController implements IBackupMetricsController
     } catch (error) {
       return {
         status: 503,
-        data: 'There has been a errror. Please try again later.'
+        data: 'There has been an error. Please try again later.'
       };
     }
   }
 
   async statistics(request: ApiRequest): Promise<ApiRequestResult> {
     try {
-      const companies: string[] = request.body?.companies ?? [];
+      const parsed = validateMetricsBody(request.body);
+      if (!parsed.ok) return { status: 400, data: parsed.error };
+
+      const companies = parsed.value.companies ?? [];
       let fromDate: number;
       let toDate: number;
       let dates: number[] | undefined;
 
-      if (request.body.dates) {
-        dates = request.body?.dates;
+      if (parsed.value.dates) {
+        dates = parsed.value.dates;
       }
 
-      if (request.body.fromDate && request.body.toDate && !request.body.dates) {
-        fromDate = request.body?.fromDate;
-        toDate = request.body?.toDate;
+      if (parsed.value.fromDate !== undefined && parsed.value.toDate !== undefined && !parsed.value.dates) {
+        fromDate = parsed.value.fromDate;
+        toDate = parsed.value.toDate;
       } else {
         const lastDate = await this.backupMetricsService.lastDate({
           companies
@@ -99,25 +106,28 @@ export default class BackupMetricsController implements IBackupMetricsController
     } catch (error) {
       return {
         status: 503,
-        data: 'There has been a errror. Please try again later.'
+        data: 'There has been an error. Please try again later.'
       };
     }
   }
 
   async weekMetrics(request: ApiRequest): Promise<ApiRequestResult> {
     try {
-      const companies: string[] = request.body?.companies ?? [];
+      const parsed = validateMetricsBody(request.body);
+      if (!parsed.ok) return { status: 400, data: parsed.error };
+
+      const companies = parsed.value.companies ?? [];
       let fromDate: number;
       let toDate: number;
       let dates: number[] | undefined;
 
-      if (request.body.dates) {
-        dates = request.body?.dates;
+      if (parsed.value.dates) {
+        dates = parsed.value.dates;
       }
 
-      if (request.body.fromDate && request.body.toDate && !request.body.dates) {
-        fromDate = request.body?.fromDate;
-        toDate = request.body?.toDate;
+      if (parsed.value.fromDate !== undefined && parsed.value.toDate !== undefined && !parsed.value.dates) {
+        fromDate = parsed.value.fromDate;
+        toDate = parsed.value.toDate;
       } else {
         const lastDate = await this.backupMetricsService.lastDate({
           companies
@@ -140,7 +150,7 @@ export default class BackupMetricsController implements IBackupMetricsController
     } catch (error) {
       return {
         status: 503,
-        data: 'There has been a errror. Please try again later.'
+        data: 'There has been an error. Please try again later.'
       };
     }
   }
@@ -155,7 +165,7 @@ export default class BackupMetricsController implements IBackupMetricsController
     } catch (error) {
       return {
         status: 503,
-        data: 'There has been a errror. Please try again later.'
+        data: 'There has been an error. Please try again later.'
       };
     }
   }
@@ -170,7 +180,7 @@ export default class BackupMetricsController implements IBackupMetricsController
     } catch (error) {
       return {
         status: 503,
-        data: 'There has been a errror. Please try again later.'
+        data: 'There has been an error. Please try again later.'
       };
     }
   }

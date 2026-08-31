@@ -2,14 +2,17 @@
   <section>
     <h1>Not Found!</h1>
     <p>
-      <a href="/">Go home?</a>
+      <router-link to="/">Go home?</router-link>
     </p>
   </section>
 </template>
 
 <script>
+import { RouterLink } from 'vue-router';
+
 export default {
-  name: 'NotFound'
+  name: 'NotFound',
+  components: { RouterLink }
 };
 </script>
 

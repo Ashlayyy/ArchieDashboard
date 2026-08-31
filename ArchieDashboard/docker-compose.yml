@@ -1,0 +1,22 @@
+services:
+  api:
+    build: ./BackEnd
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./BackEnd/.env
+    environment:
+      NODE_ENV: production
+      TRUST_PROXY: "true"
+  web:
+    build:
+      context: ./FrontEnd
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_AUTH_DOMAIN: ${VITE_AUTH_DOMAIN}
+        VITE_CLIENT_ID: ${VITE_CLIENT_ID}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
+    ports:
+      - "80:80"
+    depends_on:
+      - api

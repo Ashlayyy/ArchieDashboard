@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-shadow */
-// Logger.ts
 import { injectable } from 'tsyringe';
 import winston, { format, Logger as WinstonLogger } from 'winston';
 import 'winston-daily-rotate-file';
@@ -13,7 +11,7 @@ export default class Logger implements ILogger {
   constructor() {
     const { combine, timestamp, printf } = format;
 
-    const customFormat = printf(({ level, message, timestamp }) => `${timestamp} [${level}]: ${message}`);
+    const customFormat = printf(({ level, message, timestamp: logTime }) => `${logTime} [${level}]: ${message}`);
 
     this.logger = winston.createLogger({
       level: config.logging.level || 'info',
@@ -21,7 +19,7 @@ export default class Logger implements ILogger {
       transports: [
         new winston.transports.DailyRotateFile({
           dirname: 'logs',
-          filename: '/API-%DATE%.log',
+          filename: 'API-%DATE%.log',
           datePattern: 'DD-MM-YYYY'
         }),
         new winston.transports.Console()

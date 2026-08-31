@@ -9,7 +9,12 @@ export default function calculateSizes(data: Array<any>): any {
       throw new Error('Data is undefined');
     }
   } catch (err) {
-    console.log(err);
+    return {
+      DatabaseSize,
+      MFCPSize,
+      CorrespSize,
+      users
+    };
   }
   //Database
   if (

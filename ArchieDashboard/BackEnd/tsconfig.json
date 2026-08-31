@@ -7,66 +7,21 @@
     "emitDecoratorMetadata": true,
     "strict": true,
     "skipLibCheck": true,
+    "rootDir": "./src",
     "outDir": "dist/",
     "resolveJsonModule": true,
-    "paths": {
-      "@app/*": [
-        "*"
-      ],
-      "@types/*": [
-        "types/*"
-      ],
-      "@controllers/*": [
-        "controllers/*"
-      ],
-      "@services/*": [
-        "services/*"
-      ],
-      "@module/*": [
-        "module/*"
-      ],
-      "@config/*": [
-        "config/*"
-      ],
-      "@helpers/*": [
-        "helpers/*"
-      ],
-      "@logs/*": [
-        "logs/*"
-      ],
-      "@middlewares/*": [
-        "middlewares/*"
-      ],
-      "@routes/*": [
-        "routes/*"
-      ],
-      "@model/*": [
-        "models/*"
-      ],
-      "@interfaces/*": [
-        "interfaces/*"
-      ],
-    },
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "plugins": [
-      {
-        "transform": "typescript-transform-paths"
-      }
-    ],
     "typeRoots": [
       "./src/@types",
       "node_modules/@types"
     ],
   },
   "include": [
-    "src/",
-    "test/"
+    "src/"
   ],
   "exclude": [
     "node_modules",
-    "jest.config.ts",
-    "src/__mock__",
-    "src/__tests__"
+    "**/*.test.ts"
   ]
 }

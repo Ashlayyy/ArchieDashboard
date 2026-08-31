@@ -6,6 +6,8 @@ import mapData from '../../../helpers/mappers/mapData';
 import mapGridData from '../../../helpers/mappers/mapGridData';
 import calculatePercentage from '../../../helpers/calculatePercentage';
 import ILogger from '../../../interfaces/ILogger';
+import sourceFilter from '../../../helpers/sourceFilter';
+import { buildWeekMetricsQuery } from '../../../helpers/weekMetricsQuery';
 import { IBackupMetricsService } from '../interfaces/IBackupMetricsService';
 import { BackupMetricsServiceFilter } from '../types/BackupMetricsServiceFilter';
 import {
@@ -26,9 +28,9 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
   public async metrics(filter: BackupMetricsServiceFilter): Promise<MetricsResultModel> {
     let backupDateOptions = {};
 
-    if (filter.dates) {
+    if (filter.dates && filter.dates.length > 0) {
       backupDateOptions = { [Op.in]: filter.dates };
-    } else if (filter.fromDate && filter.toDate) {
+    } else if (filter.fromDate !== undefined && filter.toDate !== undefined) {
       backupDateOptions = { [Op.between]: [filter.fromDate, filter.toDate] };
     } else {
       backupDateOptions = { [Op.not]: null };
@@ -38,10 +40,7 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
       attributes: ['BackupDate', 'Type', [Sequelize.fn('SUM', Sequelize.col('IntData')), 'IntData']],
       where: {
         BackupDate: backupDateOptions,
-        Source:
-          filter.companies?.length ?? (0 > 1 && filter.companies !== undefined)
-            ? { [Op.in]: filter.companies }
-            : { [Op.not]: null },
+        Source: sourceFilter(filter.companies),
         IntData: { [Op.not]: null }
       },
       group: ['BackupDate', 'Type'],
@@ -53,24 +52,14 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
 
     const data: MetricsFormat[] = await this.backupMetricsModel.model().findAll(options);
 
-    const mappedData = mapData(data);
-
-    return mappedData;
+    return mapData(data);
   }
 
   public async lastDate(filter?: BackupMetricsServiceFilter): Promise<number> {
-    let companyFilter;
-    if (filter?.companies && filter?.companies.length === 1) {
-      companyFilter = filter?.companies;
-    } else if (filter?.companies && filter?.companies.length > 1) {
-      companyFilter = { [Op.in]: filter?.companies };
-    } else {
-      companyFilter = { [Op.not]: null };
-    }
     const result: MetricsFormat = await this.backupMetricsModel.model().findOne({
       attributes: ['BackupDate'],
       where: {
-        Source: companyFilter
+        Source: sourceFilter(filter?.companies)
       },
       order: [['BackupDate', 'DESC']]
     });
@@ -78,19 +67,10 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
   }
 
   public async getLength(filter: BackupMetricsServiceFilter): Promise<number> {
-    let companyFilter;
-    if (filter?.companies && filter?.companies.length === 1) {
-      companyFilter = filter?.companies;
-    } else if (filter?.companies && filter?.companies.length > 1) {
-      companyFilter = { [Op.in]: filter?.companies };
-    } else {
-      companyFilter = { [Op.not]: null };
-    }
-
     const data: MetricsFormat[] = await this.backupMetricsModel.model().findAll({
       attributes: ['Source'],
       where: {
-        Source: companyFilter,
+        Source: sourceFilter(filter.companies),
         BackupDate: await this.lastDate(filter),
         Type: 'database_size'
       }
@@ -100,30 +80,19 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
 
   public async getTypes(filter: BackupMetricsServiceFilter): Promise<MetricsTypeResultModel[]> {
     let backupDateOptions;
-    let companyFilter;
 
-    if (filter?.companies && filter?.companies.length === 1) {
-      companyFilter = filter?.companies;
-    } else if (filter?.companies && filter?.companies.length > 1) {
-      companyFilter = { [Op.in]: filter?.companies };
-    } else {
-      companyFilter = { [Op.not]: null };
-    }
-
-    if (filter.fromDate && filter.toDate) {
+    if (filter.dates && filter.dates.length > 0) {
+      backupDateOptions = { [Op.in]: filter.dates };
+    } else if (filter.fromDate !== undefined && filter.toDate !== undefined) {
       backupDateOptions = { [Op.between]: [filter.fromDate, filter.toDate] };
     } else {
       backupDateOptions = { [Op.not]: null };
     }
 
-    if (filter.dates) {
-      backupDateOptions = { [Op.in]: filter.dates };
-    }
-
     const options: FindOptions = {
       attributes: ['Type', [Sequelize.fn('SUM', Sequelize.col('IntData')), 'IntData']],
       where: {
-        Source: companyFilter,
+        Source: sourceFilter(filter.companies),
         BackupDate: backupDateOptions,
         IntData: { [Op.not]: null }
       },
@@ -134,14 +103,12 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
     let totalSize: number = 0;
     const typesArray: MetricsTypeResultModel[] = [];
     if (data.length === 0) {
-      for (let i = 0; i < 4; i += 1) {
-        typesArray.push({
-          Type: 'No data available',
-          Amount: 0
-        });
-      }
-
-      return typesArray;
+      return [
+        { Type: 'No data available', Amount: 0 },
+        { Type: 'No data available', Amount: 0 },
+        { Type: 'No data available', Amount: 0 },
+        { Type: 'No data available', Amount: 0 }
+      ];
     }
 
     data.forEach((item: MetricsFormat) => {
@@ -164,43 +131,16 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
 
     typesArray.push({
       Type: 'Overig',
-      Amount: 100 - typesArray[0].Amount - typesArray[1].Amount
+      Amount: 100 - (typesArray[0]?.Amount ?? 0) - (typesArray[1]?.Amount ?? 0)
     });
 
     return typesArray;
   }
 
   public async weekMetrics(filter: BackupMetricsServiceFilter): Promise<WeekMetricsResultModel[]> {
-    let DateOptions =
-      !filter.fromDate && !filter.toDate
-        ? ` AND  
-  BackupDate BETWEEN $1 AND $2	`
-        : '';
-
-    if (filter.dates) {
-      DateOptions = ` AND BackupDate IN (${filter.dates})`;
-    }
-
-    const SourceOptions =
-      filter.companies && filter.companies[0] !== '' && filter.companies.length > 0
-        ? `AND 
-      Source IN (${filter.companies?.map((company: any) => `'${company}'`)})`
-        : '';
-
-    const bindOptions =
-      !filter.fromDate && !filter.toDate && !filter.dates
-        ? {
-            bind: [filter.fromDate ?? (await this.lastDate(filter)) - 7, filter.toDate ?? (await this.lastDate(filter))]
-          }
-        : {};
-
-    const query = `SELECT BackupDate%7 AS BackupDate, SUM(IntData) AS IntData, Type
-  FROM dbo.BackupMetrics bm
-  WHERE bm.Type NOT IN ('database', 'mfcp') AND bm.IntData IS NOT NULL ${DateOptions} ${SourceOptions}
-  GROUP BY BackupDate%7, Type
-  ORDER BY Type, BackupDate`;
-
-    const data = await this.backupMetricsModel.sequelize.query(query, bindOptions);
+    const lastDate = await this.lastDate(filter);
+    const { sql, replacements } = buildWeekMetricsQuery(filter, lastDate);
+    const data = await this.backupMetricsModel.sequelize.query(sql, { replacements });
 
     return data[0];
   }
@@ -240,9 +180,7 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
 
     const companyData: MetricsFormat[] = await this.backupMetricsModel.model().findAll(options);
 
-    const data: GridItem[] = mapGridData(companies, companyData);
-
-    return data;
+    return mapGridData(companies, companyData);
   }
 
   async list(): Promise<string[]> {

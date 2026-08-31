@@ -1,47 +1,15 @@
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
+import asyncHandler from 'express-async-handler';
 import mapRequest from '../helpers/mappers/requestmapper';
 import { settingsController } from '../shared/container';
+import sendApiResult from '../helpers/sendApiResult';
 
 const router = Router();
 
-router.get('/:id', async (req, res) => {
-  const apiRequestResult = await settingsController.settingsById(mapRequest(req));
-  res.json({
-    ...apiRequestResult,
-    headers: res.getHeaders()
-  });
+const handleSettings = asyncHandler(async (req: Request, res: Response) => {
+  sendApiResult(res, await settingsController.settingsById(mapRequest(req)));
 });
 
-router.post('/:id', async (req, res) => {
-  const apiRequestResult = await settingsController.settingsById(mapRequest(req));
-  res.json({
-    ...apiRequestResult,
-    headers: res.getHeaders()
-  });
-});
-
-router.patch('/:id', async (req, res) => {
-  const apiRequestResult = await settingsController.settingsById(mapRequest(req));
-  res.json({
-    ...apiRequestResult,
-    headers: res.getHeaders()
-  });
-});
-
-router.put('/:id', async (req, res) => {
-  const apiRequestResult = await settingsController.settingsById(mapRequest(req));
-  res.json({
-    ...apiRequestResult,
-    headers: res.getHeaders()
-  });
-});
-
-router.delete('/:id', async (req, res) => {
-  const apiRequestResult = await settingsController.settingsById(mapRequest(req));
-  res.json({
-    ...apiRequestResult,
-    headers: res.getHeaders()
-  });
-});
+router.all('/:id', handleSettings);
 
 export default router;

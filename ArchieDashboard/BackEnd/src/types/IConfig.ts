@@ -10,13 +10,6 @@ interface IConfig {
       delayMs: number;
     };
   };
-  database: {
-    user: string;
-    password: string;
-    host: string;
-    name: string;
-    dialect: string;
-  };
   logging: {
     level: string;
   };

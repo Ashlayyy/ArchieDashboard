@@ -4,8 +4,8 @@
   "description": "Dashboard for Archie",
   "main": "index.js",
   "scripts": {
-    "build": "concurrently \"cd ./FrontEnd && npm build\"",
-    "start": "concurrently \"cd ./BackEnd && npm run dev\" \"cd ./FrontEnd && npm run dev\"",
+    "build": "concurrently \"npm run build --prefix ./BackEnd\" \"npm run build --prefix ./FrontEnd\"",
+    "start": "npm run start --prefix ./BackEnd",
     "i-start": "npm install && concurrently \"cd ./BackEnd && npm install && npm run dev\" \"cd ./FrontEnd && npm install && npm run dev\""
   },
   "dependencies": {

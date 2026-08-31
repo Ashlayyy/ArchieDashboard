@@ -12,9 +12,7 @@ import ExpressBackupMetricsController from '../../module/backupmetrics/controlle
 // Predicting thing
 import PredictingController from '../../module/predicting/controllers/PredictingController';
 import PredictingService from '../../module/predicting/services/PredictingService';
-import LinearRegressionService from '../../module/predicting/services/LinearRegressionService';
 import IPredictingService from '../../module/predicting/interfaces/IPredictingService';
-import ILinearRegressionService from '../../module/predicting/interfaces/ILinearRegressionService';
 
 // Logging thing
 import Logger from '../../helpers/logger';
@@ -33,7 +31,6 @@ container.registerSingleton<database>('database', database);
 container.registerSingleton<BackupSchema>('BackupMetricsModel', BackupSchema);
 container.registerSingleton<IBackupMetricsService>('BackupMetricsService', SequelizeBackupMetricsService);
 container.registerSingleton<IPredictingService>('PredictingService', PredictingService);
-container.registerSingleton<ILinearRegressionService>('LinearRegressionService', LinearRegressionService);
 container.registerSingleton<ISettingsService>('SettingsService', SettingsService);
 container.registerSingleton<IBackupMetricsController>('BackupMetricsController', ExpressBackupMetricsController);
 container.registerSingleton<IPredictingController>('PredictingController', PredictingController);

@@ -6,11 +6,10 @@
     :user="user"
     class="layout_header"
   ></layoutHeader>
-  <profileMenu></profileMenu>
+  <profileMenu v-if="currentRoute !== '/login' && currentRoute !== '/error'"></profileMenu>
   <v-spacer></v-spacer>
   <v-menu
-    v-if="currentRoute !== '/profile' && currentRoute !== '/settings'"
-    :vue-mounted="onMounted()"
+    v-if="currentRoute !== '/profile' && currentRoute !== '/settings' && currentRoute !== '/login'"
     v-model="menu"
     :location="'bottom center'"
     activator=".menu-activator"
@@ -68,7 +67,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, onBeforeMount, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { push } from 'notivue';
 import { useAuth0 } from '@auth0/auth0-vue';
@@ -100,15 +99,20 @@ const currentRoute = ref('');
 const menu = ref(false);
 const filterStore = useFilterStore();
 const updateChevron = ref(0);
+const route = useRoute();
 
 const apiService = new ApiService();
 const auth0 = useAuth0();
 const user = ref(auth0.user);
 const isAuthenticated = ref(auth0.isAuthenticated);
 
-const getPath = () => {
-  currentRoute.value = useRoute().fullPath;
-};
+watch(
+  () => route.fullPath,
+  (path) => {
+    currentRoute.value = path;
+  },
+  { immediate: true }
+);
 
 const fetchDatabases = async () => {
   const response = await apiService.fetchApi('/database/metrics/list');
@@ -140,13 +144,12 @@ const activateFilter = (databasesSelected: any) => {
   updateFilter();
 };
 
-const onMounted = async () => {
+onMounted(async () => {
   if (
     !deniedRoutes.includes(currentRoute.value) &&
     isAuthenticated.value &&
     (!databases || databases.length === 0 || databases[0] === '')
   ) {
-    getPath();
     await fetchDatabases();
     selectedDates = filterStore.getSelectedDates();
     selectedDatabases = filterStore.getSelectedDatabases();
@@ -156,7 +159,7 @@ const onMounted = async () => {
       vuetifyTheme.global.name.value = vuetifyTheme.global.current.value.dark ? 'light' : 'dark';
     }
   }
-};
+});
 </script>
 
 <style lang="scss" scoped>

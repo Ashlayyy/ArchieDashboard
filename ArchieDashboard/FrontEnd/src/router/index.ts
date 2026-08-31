@@ -6,14 +6,12 @@ import DatabaseView from '../pages/DatabaseView.vue';
 import LoginView from '../pages/loginView.vue';
 import ProfileView from '../pages/ProfileView.vue';
 import SettingsView from '../pages/SettingsView.vue';
+import ErrorView from '../pages/ErrorView.vue';
+import CompareView from '../pages/CompareView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/:pathMatch(.*)*',
-      redirect: '/'
-    },
     {
       path: '/',
       name: 'home',
@@ -23,25 +21,41 @@ const router = createRouter({
     {
       path: '/database/:database',
       name: 'database',
-      component: async () => DatabaseView,
+      component: DatabaseView,
+      beforeEnter: authGuard
+    },
+    {
+      path: '/compare',
+      name: 'database-compare',
+      component: CompareView,
       beforeEnter: authGuard
     },
     {
       path: '/profile',
       name: 'profile',
-      component: async () => ProfileView,
+      component: ProfileView,
       beforeEnter: authGuard
     },
     {
       path: '/settings',
       name: 'settings',
-      component: async () => SettingsView,
+      component: SettingsView,
       beforeEnter: authGuard
     },
     {
       path: '/login',
       name: 'login',
-      component: async () => LoginView
+      component: LoginView
+    },
+    {
+      path: '/error',
+      name: 'error',
+      component: ErrorView
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: ErrorView
     }
   ],
   scrollBehavior(to, from, savedPosition) {

@@ -9,7 +9,7 @@ export default class MetricsService implements IMetricsService {
 
   statistics = async (filter?: MetricsFilter) => {
     try {
-      const response = await this.ApiService.fetchApi('/database/metrics/statistics', '', filter ? filter : undefined);
+      const response = await this.ApiService.fetchApi('/database/metrics/statistics', undefined, filter);
       if (!response) throw new Error('No response');
       if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
       return response;
@@ -20,7 +20,7 @@ export default class MetricsService implements IMetricsService {
 
   metrics = async (filter?: MetricsFilter) => {
     try {
-      const response = await this.ApiService.fetchApi('/database/metrics', '', filter ? filter : undefined);
+      const response = await this.ApiService.fetchApi('/database/metrics', undefined, filter);
       if (!response) throw new Error('No response');
       if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
       return response;
@@ -31,7 +31,7 @@ export default class MetricsService implements IMetricsService {
 
   weekMetrics = async (filter?: MetricsFilter) => {
     try {
-      const response = await this.ApiService.fetchApi('/database/metrics/week', '', filter ? filter : undefined);
+      const response = await this.ApiService.fetchApi('/database/metrics/week', undefined, filter);
       if (!response) throw new Error('No response');
       if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
       return response;
@@ -53,7 +53,7 @@ export default class MetricsService implements IMetricsService {
 
   predictionMetrics = async (filter?: MetricsFilter) => {
     try {
-      const response = await this.ApiService.fetchApi('/predict', '', filter ? filter : undefined);
+      const response = await this.ApiService.fetchApi('/predict', undefined, filter);
       if (!response) throw new Error('No response');
       if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
       return response;
@@ -75,13 +75,14 @@ export default class MetricsService implements IMetricsService {
     try {
       const response = await this.ApiService.fetchApi('/database/metrics', { cache: 'no-store' });
       if (!response) throw new Error('No response');
-      if (response.headers['x-ratelimit-remaining'] < 25) {
+      const remaining = Number(response.headers?.['x-ratelimit-remaining']);
+      if (remaining < 25 && remaining > 5) {
         return 1;
-      } else if (response.headers['x-ratelimit-remaining'] <= 5) {
-        return 2;
-      } else {
-        return 0;
       }
+      if (remaining <= 5) {
+        return 2;
+      }
+      return 0;
     } catch (error: any) {
       throw new Error(error);
     }

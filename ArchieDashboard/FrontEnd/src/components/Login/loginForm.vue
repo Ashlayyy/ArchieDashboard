@@ -18,7 +18,7 @@
           type="submit"
           @click="login()"
         >
-          {{ $t('buttonText.login') }}
+          {{ $t('buttonTekst.login') }}
         </v-btn>
       </v-card>
     </v-form>

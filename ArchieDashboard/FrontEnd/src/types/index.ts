@@ -45,10 +45,10 @@ declare global {
         correspondence: number;
       };
     };
-    ['GBArray'];
-    ['MFArray'];
-    ['COArray'];
-    ['USArray'];
+    GBArray?: number[];
+    MFArray?: number[];
+    COArray?: number[];
+    USArray?: number[];
   }
 
   interface dataObjectForTotal {

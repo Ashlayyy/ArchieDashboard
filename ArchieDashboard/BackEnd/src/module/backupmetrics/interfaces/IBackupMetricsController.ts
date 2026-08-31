@@ -5,6 +5,6 @@ export default interface IBackupMetricsController {
   metrics(request: ApiRequest): Promise<ApiRequestResult>;
   statistics(request: ApiRequest): Promise<ApiRequestResult>;
   weekMetrics(request: ApiRequest): Promise<ApiRequestResult>;
-  gridMetrics(request: ApiRequest): Promise<ApiRequestResult>;
-  list(request: ApiRequest): Promise<ApiRequestResult>;
+  gridMetrics(): Promise<ApiRequestResult>;
+  list(): Promise<ApiRequestResult>;
 }

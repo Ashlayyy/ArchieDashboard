@@ -1,3 +1,9 @@
+const apiUrl = import.meta.env.VITE_API_URL;
+
+if (import.meta.env.PROD && !apiUrl) {
+  throw new Error('VITE_API_URL must be set for production builds');
+}
+
 export default {
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
+  apiUrl: apiUrl || 'http://localhost:4000/api/v1'
 };

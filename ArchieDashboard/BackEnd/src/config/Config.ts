@@ -4,7 +4,7 @@ const config: IConfig = {
   request: {
     rateLimit: {
       window: 15 * 60 * 1000,
-      max: 150000
+      max: 150
     },
     slowDown: {
       window: 15 * 60 * 1000,
@@ -12,15 +12,8 @@ const config: IConfig = {
       delayMs: 100
     }
   },
-  database: {
-    user: 'sa',
-    password: '',
-    host: 'localhost',
-    name: 'CloudMetrics',
-    dialect: 'mssql'
-  },
   logging: {
-    level: 'info'
+    level: process.env.LOG_LEVEL || 'info'
   }
 };
 

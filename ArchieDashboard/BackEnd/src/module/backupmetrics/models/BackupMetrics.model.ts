@@ -5,6 +5,8 @@ import { injectable, inject } from 'tsyringe';
 export default class BackupMetrics {
   sequelize: any = null;
 
+  private cachedModel: any = null;
+
   constructor(@inject('database') private database: any) {
     this.sequelize = database.sequelize;
   }
@@ -35,10 +37,20 @@ export default class BackupMetrics {
 
   name: String = 'BackupMetrics';
 
-  schemaOptions: any = {};
+  schemaOptions: any = {
+    freezeTableName: true,
+    timestamps: false
+  };
 
-  model = () =>
-    this.sequelize.define(this.name, this.schema, {
+  model = () => {
+    if (this.cachedModel) {
+      return this.cachedModel;
+    }
+
+    this.cachedModel = this.sequelize.define(this.name, this.schema, {
       ...this.schemaOptions
     });
+
+    return this.cachedModel;
+  };
 }

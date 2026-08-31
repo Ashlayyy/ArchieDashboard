@@ -1,28 +1,50 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/naming-convention */
 import 'reflect-metadata';
-import { inject, injectable } from 'tsyringe';
+import { Server as HttpServer } from 'http';
 import app from './routes/index.routes';
-import ILogger from './interfaces/ILogger';
 import Logger from './helpers/logger';
+import { databaseContainer } from './shared/container';
 
-@injectable()
+const PORT = Number(process.env.PORT) || 4000;
+
 export default class Server {
-  Logger: any;
+  Logger: Logger;
+
+  httpServer?: HttpServer;
 
   constructor() {
+    this.Logger = new Logger();
     this.startServer();
   }
 
   startServer = async () => {
-    this.Logger = new Logger();
     try {
-      app.listen(4000, () => {
-        this.Logger.info('Server is running on port 4000');
-        this.Logger.info('Swagger API Docs running at /docs');
+      if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+        throw new Error('CORS_ORIGIN is required when NODE_ENV=production');
+      }
+
+      await databaseContainer.authenticate();
+
+      this.httpServer = app.listen(PORT, () => {
+        this.Logger.info(`Server is running on port ${PORT}`);
+        if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+          this.Logger.info('Swagger API Docs running at /docs');
+        }
       });
+
+      const shutdown = (signal: string) => {
+        this.Logger.info(`Received ${signal}, shutting down`);
+        this.httpServer?.close(() => {
+          process.exit(0);
+        });
+        setTimeout(() => process.exit(1), 10000).unref();
+      };
+
+      process.on('SIGTERM', () => shutdown('SIGTERM'));
+      process.on('SIGINT', () => shutdown('SIGINT'));
     } catch (error: any) {
       this.Logger.error(error);
+      process.exit(1);
     }
   };
 }
