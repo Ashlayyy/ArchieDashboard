@@ -15,7 +15,10 @@ export default {
     },
     chartOptions: {
       type: Object,
-      default: () => {}
+      default: () => ({
+        responsive: true,
+        maintainAspectRatio: false
+      })
     }
   }
 };

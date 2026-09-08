@@ -1,11 +1,17 @@
 $colors: (
-  'globalBackground': #eee,
-  'black': #000,
-  'green': green,
-  'red': red
+  'globalBackground': #eef2f7,
+  'surface': #ffffff,
+  'ink': #0f172a,
+  'muted': #64748b,
+  'line': #e2e8f0,
+  'accent': #0f766e,
+  'header': #0b1220,
+  'black': #0f172a,
+  'green': #059669,
+  'red': #dc2626
 );
 
 $padding: (
-  'globalPadding': 2rem,
-  'chartPadding': 1rem
+  'globalPadding': 1.5rem,
+  'chartPadding': 0.5rem
 );

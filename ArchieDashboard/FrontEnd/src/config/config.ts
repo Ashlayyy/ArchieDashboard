@@ -5,5 +5,5 @@ if (import.meta.env.PROD && !apiUrl) {
 }
 
 export default {
-  apiUrl: apiUrl || 'http://localhost:4000/api/v1'
+  apiUrl: apiUrl || 'http://localhost:4100/api/v1'
 };

@@ -9,6 +9,7 @@ import { ApiRequest } from '../../backupmetrics/types/Request/ApiRequest';
 import { ApiRequestResult } from '../../backupmetrics/types/Request/ApiRequestResult';
 import { IBackupMetricsService } from '../../backupmetrics/interfaces/IBackupMetricsService';
 import validateMetricsBody from '../../../helpers/validateMetricsBody';
+import { emptyPrediction } from '../../../helpers/emptyMetrics';
 
 @injectable()
 export default class PredictingController implements IPredictingController {
@@ -50,8 +51,8 @@ export default class PredictingController implements IPredictingController {
     } catch (error) {
       this.Logger.error(String(error));
       return {
-        status: 503,
-        data: 'There has been an error. Please try again later.'
+        status: 200,
+        data: emptyPrediction()
       };
     }
   }

@@ -1,5 +1,8 @@
 <template>
-  <main class="dashboard" v-if="Configs?.charts?.totalGigabytes && loadingDone == true">
+  <main class="dashboard" v-if="loadingDone">
+    <div v-if="noData" class="dashboard_empty">
+      <p>{{ $t('select.geenResultaat') }}</p>
+    </div>
     <div class="dashboard_title">
       {{ $t('dashboardTitle') }}
     </div>
@@ -51,7 +54,7 @@
         :title="'typesOfData.title'"
       />
 
-      <div>
+      <div class="growth-slot">
         <GrowthPicker @update:selectedItem="updateGrowthFilter($event)" />
         <GraphWrapper
           :key="Configs.charts.growth.datasets"
@@ -113,11 +116,13 @@ import growth from '../utils/Calculating/calculateGrowth';
 
 import { update } from '../stores/update';
 import { useFilterStore } from '../stores/filters';
+import { isEmptyMetrics } from '../utils/normalizeMetrics';
 import differenceTwoDates from '../utils/Transforming/differenceTwoDates';
 
 const gridMetrics = ref<any>();
 const loadingDone = ref(false);
 const loadError = ref(false);
+const noData = ref(false);
 const Configs: IConfigs = reactive({
   charts: {
     totalGigabytes: [],
@@ -183,14 +188,18 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
     const statistics = await metricsService.statistics(formattedFilter);
     const metrics = await metricsService.metrics(formattedFilter);
     const weekMetrics = await metricsService.weekMetrics(formattedFilter);
-    gridMetrics.value = (await metricsService.gridMetrics()).data;
+    const gridResponse = await metricsService.gridMetrics();
+    gridMetrics.value = Array.isArray(gridResponse.data) ? gridResponse.data : [];
     const predictionMetrics = await metricsService.predictionMetrics(formattedFilter);
-    const growthMetrics = await growth(metrics.data.metrics);
+    const metricsData = metrics.data;
+    const statisticsData = statistics.data;
+    const growthMetrics = (await growth(metricsData.metrics)) ?? { GB: [], MFCP: [], Corresp: [], Users: [] };
     const closeToLimit = await metricsService.closeToLimit();
     const averageGb: any[] = [];
     const averageUs: any[] = [];
     const averageActUs: any[] = [];
     let totalGb: number = 0;
+    noData.value = isEmptyMetrics(metricsData);
 
     if (closeToLimit === 1) {
       push.warning({
@@ -210,52 +219,45 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
       });
     }
 
-    totalGb = totalGb + metrics.data.chartData.GB[1].y;
-    totalGb = totalGb + metrics.data.chartData.MFCP[1].y;
+    totalGb += metricsData.chartData.GB[metricsData.chartData.GB.length - 1]?.y ?? 0;
 
-    for (let i = 0; i < metrics.data.metrics.length; i++) {
-      if (metrics.data.metrics[i].Type === 'database_size') {
+    for (let i = 0; i < metricsData.metrics.length; i++) {
+      if (metricsData.metrics[i].Type === 'database_size') {
         averageGb.push({
           x: '',
-          y: metrics.data.metrics[i] ? calculateAverage(metrics.data.metrics[i].IntData, statistics.data.Length) : 0
+          y: metricsData.metrics[i] ? calculateAverage(metricsData.metrics[i].IntData, statisticsData.Length) : 0
         });
       }
-      if (metrics.data.metrics[i].Type === 'users') {
+      if (metricsData.metrics[i].Type === 'users') {
         averageUs.push({
           x: '',
-          y: metrics.data.metrics[i]
-            ? Math.round(calculateAverage(metrics.data.metrics[i].IntData, statistics.data.Length))
+          y: metricsData.metrics[i]
+            ? Math.round(calculateAverage(metricsData.metrics[i].IntData, statisticsData.Length))
             : 0
         });
       }
-      if (metrics.data.metrics[i].Type === 'active_users') {
+      if (metricsData.metrics[i].Type === 'active_users') {
         averageActUs.push({
           x: '',
-          y: metrics.data.metrics[i]
-            ? Math.round(calculateAverage(metrics.data.metrics[i].IntData, statistics.data.Length))
+          y: metricsData.metrics[i]
+            ? Math.round(calculateAverage(metricsData.metrics[i].IntData, statisticsData.Length))
             : 0
         });
       }
     }
 
     for (let i = 0; i < averageGb.length; i++) {
-      if (averageGb.length !== averageUs.length) {
-        averageUs.push({
-          x: '',
-          y: 0
-        });
-      }
-
-      if (averageGb.length !== averageActUs.length) {
-        averageActUs.push({
-          x: '',
-          y: 0
-        });
-      }
+      averageGb[i].x = metricsData.chartData.GB[i]?.x || averageGb[i].x;
+    }
+    for (let i = 0; i < averageUs.length; i++) {
+      averageUs[i].x = metricsData.chartData.US[i]?.x || averageUs[i].x;
+    }
+    for (let i = 0; i < averageActUs.length; i++) {
+      averageActUs[i].x = metricsData.chartData.ACT_US[i]?.x || averageActUs[i].x;
     }
 
     gridMetrics.value.forEach((gridItem: any) => {
-      const length = statistics.data.Length;
+      const length = statisticsData.Length || 1;
       const average = totalGb / length;
       gridItem.Average =
         Math.round((gridItem.Sizes.Total / average) * 100) !== undefined &&
@@ -265,41 +267,15 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
           : 0;
     });
 
-    for (let i = 0; i < metrics.data.chartData.GB.length; i++) {
-      averageGb[i].x = metrics.data.chartData.GB[i].x;
-      averageUs[i].x = !metrics.data.chartData.US[i] ? metrics.data.chartData.GB[i].x : metrics.data.chartData.US[i].x;
-      averageActUs[i].x = !metrics.data.chartData.ACT_US[i]
-        ? metrics.data.chartData.GB[i].x
-        : metrics.data.chartData.ACT_US[i].x;
-    }
-
-    for (let i = 0; i < metrics.data.chartData.GB.length; i++) {
-      if (metrics.data.chartData.ACT_US.length !== metrics.data.chartData.GB.length) {
-        metrics.data.chartData.ACT_US.push({
-          x: String(
-            metrics.data.chartData.GB[i].x
-          ),
-          y: 0
-        });
-      }
-
-      if (metrics.data.chartData.US.length !== metrics.data.chartData.GB.length) {
-        metrics.data.chartData.US.push({
-          x: String(metrics.data.chartData.GB[i].x),
-          y: 0
-        });
-      }
-    }
-
     graphHandlerData.value = new GraphHandler(
-      metrics.data.chartData,
-      [metrics.data.chartData.US, metrics.data.chartData.ACT_US],
+      metricsData.chartData,
+      [metricsData.chartData.US, metricsData.chartData.ACT_US],
       averageGb,
       [averageUs, averageActUs],
       growthMetrics,
       predictionMetrics.data,
       weekMetrics.data,
-      statistics.data.Types,
+      statisticsData.Types,
       false,
       t
     );
@@ -325,8 +301,8 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
     Configs.charts.weekData = graphHandlerData.value.charts.weekData;
 
     pending.resolve({
-      title: 'Success',
-      message: 'Metrics fetched successfully.',
+      title: noData.value ? 'No data' : 'Success',
+      message: noData.value ? 'No metrics available. Showing an empty dashboard.' : 'Metrics fetched successfully.',
       duration: 1000,
       ariaLive: 'polite',
       ariaRole: 'status'
@@ -405,93 +381,12 @@ const updateGrowthFilter = (event: string) => {
 };
 </script>
 
-<style lang="scss">
-@use '../assets/sass/abstracts/variables.scss';
-
-.dashboard {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 1rem;
-  flex-direction: column;
-  text-align: start;
-  padding: map-get(variables.$padding, 'globalPadding');
-
-  &Collum {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5rem;
-    flex-direction: row;
-    padding: 2rem;
-    width: 100%;
-    height: max-content;
-  }
-
-  &_loading {
-    display: flex;
-    width: 100vw;
-    height: 75vh;
-    justify-content: center;
-    align-items: center;
-  }
-}
-
-.chartWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: max-content;
-}
-
-.leftSide {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  flex-direction: column;
-  text-align: start;
-  padding: map-get(variables.$padding, 'chartPadding');
-  color: map-get(variables.$colors, 'black');
-}
-
-.percentage.green {
-  color: map-get(variables.$colors, 'green');
-}
-.percentage.red {
-  color: map-get(variables.$colors, 'red');
-}
-
-.rightSide {
-  padding: map-get(variables.$padding, 'chartPadding');
-  color: map-get(variables.$colors, 'black');
-}
-
-.chartWrap {
-  width: 500px;
-  aspect-ratio: 2/1;
-}
-
+<style lang="scss" scoped>
 .loading {
-  width: 90vw;
+  width: 100%;
+  min-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: max-content;
-}
-
-@media screen and (max-width: 1200px), screen and (max-device-width: 1200px) {
-  .dashboard {
-    &Collum {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5rem;
-      flex-direction: column-reverse;
-      padding: 2rem;
-      width: 100%;
-      height: max-content;
-    }
-  }
 }
 </style>

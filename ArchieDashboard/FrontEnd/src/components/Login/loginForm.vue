@@ -1,27 +1,27 @@
 <template>
-  <div>
-    <v-img
-      class="mx-auto my-6"
-      max-width="230"
-      src="https://archie.myarchie.nl/app/img/login/default/default.png"
-    ></v-img>
-    <v-form @submit.prevent="handleSubmit()">
-      <v-card class="mx-auto pa-12 pb-8" elevation="8" max-width="450" rounded="lg">
+  <div class="login-page">
+    <div class="login-panel">
+      <div class="login-brand">
+        <span class="login-mark" aria-hidden="true"></span>
+        <h1>DataMetrics</h1>
+        <p>{{ $t('loginTagline') }}</p>
+      </div>
+      <v-form @submit.prevent="handleSubmit()">
         <v-btn
           v-if="!isLoading"
           :disabled="loggingIn"
-          class="mb-8"
-          color="blue"
+          class="login-button"
+          color="#0f766e"
           size="large"
-          variant="tonal"
+          variant="flat"
           block
           type="submit"
           @click="login()"
         >
           {{ $t('buttonTekst.login') }}
         </v-btn>
-      </v-card>
-    </v-form>
+      </v-form>
+    </div>
   </div>
 </template>
 
@@ -44,41 +44,57 @@ const login = () => {
 };
 </script>
 <style scoped lang="scss">
-.form {
-  &_section {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    padding-top: 5rem;
-  }
-  &_group {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    flex-direction: column;
-    width: 100%;
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.28), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.18), transparent 42%),
+    #eef2f7;
+}
 
-    &_button {
-      align-items: center;
-    }
+.login-panel {
+  width: min(420px, 100%);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 1.75rem;
+
+  h1 {
+    margin: 0.9rem 0 0.35rem;
+    font-size: 1.8rem;
+    letter-spacing: -0.04em;
+    color: #0f172a;
   }
-  &_title {
-    text-align: center;
-  }
-  &_label {
-    font-size: 1.2rem;
+
+  p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.95rem;
   }
 }
 
-.invalid-feedback {
-  color: red;
+.login-mark {
+  display: inline-block;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.28);
 }
 
-.is-invalid {
-  border-color: red;
-  color: red;
+.login-button {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 </style>

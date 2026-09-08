@@ -1,73 +1,59 @@
 <template v-if="enabled != false">
-  <div v-if="chartData && version == 'Line'">
-    <div class="chart">
-      <div class="chartDivide">
-        <h4>{{ $t(`${title}`) }}</h4>
-        <div class="chartWrap">
-          <ChartJSLine :chartData="chartData" :chartOptions="chartConfig" />
+  <div v-if="chartData && version == 'Line'" class="chart-card">
+    <h4>{{ $t(`${title}`) }}</h4>
+    <div class="chartWrap">
+      <ChartJSLine :chartData="chartData" :chartOptions="chartConfig" />
+    </div>
+    <div class="chartWrapper">
+      <div class="leftSide">
+        <div class="total amountText" v-if="typeText">
+          {{
+            roundToDecimals(chartData.datasets[0]?.data?.[chartData.datasets[0]?.data.length - 1]?.y, 2)
+          }}
+          {{ typeText }}
         </div>
-      </div>
-      <div class="chartWrapper">
-        <div class="leftSide">
-          <div class="total amountText" v-if="typeText">
-            {{
-              chartData.datasets[0]?.data
-                ? roundToDecimals(chartData.datasets[0]?.data[0]?.y, 2)
-                : roundToDecimals(chartData.datasets[0]?.data[0]?.y, 2)
-            }}
-            {{ typeText }}
-          </div>
-          <div
-            v-if="typeText"
-            :class="{
-              amountText: true,
-              percentage: true,
-              green:
-                calculatePercentage(
-                  chartData.datasets[0]?.data[0]?.y,
-                  chartData.datasets[0]?.data[chartData.datasets[0]?.data.length - 1]?.y,
-                  '-'
-                ) < 0,
-              red:
-                calculatePercentage(
-                  chartData.datasets[0]?.data[0]?.y,
-                  chartData.datasets[0]?.data[chartData.datasets[0]?.data.length - 1]?.y,
-                  '-'
-                ) > 0,
-              black:
-                calculatePercentage(
-                  chartData.datasets[0]?.data[0]?.y,
-                  chartData.datasets[0]?.data[chartData.datasets[0]?.data.length - 1]?.y,
-                  '-'
-                ) == 0
-            }"
-          >
-            <span v-if="!percentageDisabled">
-              {{ chartData.datasets[0]?.data ? getPercentage(chartData.datasets[0]?.data) : 'Something is wrong %' }}
-            </span>
-          </div>
+        <div
+          v-if="typeText"
+          :class="{
+            amountText: true,
+            percentage: true,
+            green:
+              calculatePercentage(
+                chartData.datasets[0]?.data[0]?.y,
+                chartData.datasets[0]?.data[chartData.datasets[0]?.data.length - 1]?.y,
+                '-'
+              ) > 0,
+            red:
+              calculatePercentage(
+                chartData.datasets[0]?.data[0]?.y,
+                chartData.datasets[0]?.data[chartData.datasets[0]?.data.length - 1]?.y,
+                '-'
+              ) < 0,
+            black:
+              calculatePercentage(
+                chartData.datasets[0]?.data[0]?.y,
+                chartData.datasets[0]?.data[chartData.datasets[0]?.data.length - 1]?.y,
+                '-'
+              ) == 0
+          }"
+        >
+          <span v-if="!percentageDisabled">
+            {{ chartData.datasets[0]?.data ? getPercentage(chartData.datasets[0]?.data) : 'Something is wrong %' }}
+          </span>
         </div>
       </div>
     </div>
   </div>
-  <div v-else-if="chartData && version == 'Pie'">
-    <div class="chart">
-      <div class="chartDivide">
-        <h4>{{ $t(`${title}`) }}</h4>
-        <div class="chartWrap">
-          <ChartJSPie :chartData="chartData" />
-        </div>
-      </div>
+  <div v-else-if="chartData && version == 'Pie'" class="chart-card">
+    <h4>{{ $t(`${title}`) }}</h4>
+    <div class="chartWrap">
+      <ChartJSPie :chartData="chartData" :chartOptions="pieConfig" />
     </div>
   </div>
-  <div v-else-if="chartData && version == 'Bar'">
-    <div class="chart">
-      <div class="chartDivide">
-        <h4>{{ $t(`${title}`) }}</h4>
-        <div class="chartWrap">
-          <ChartJSBar :chartData="chartData" />
-        </div>
-      </div>
+  <div v-else-if="chartData && version == 'Bar'" class="chart-card">
+    <h4>{{ $t(`${title}`) }}</h4>
+    <div class="chartWrap">
+      <ChartJSBar :chartData="chartData" :chartOptions="chartConfig" />
     </div>
   </div>
   <div v-else><p>You did not specify a correct version!</p></div>
@@ -89,7 +75,21 @@ export default {
   },
   data() {
     return {
-      chartConfig: {}
+      chartConfig: {},
+      pieConfig: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 10,
+              usePointStyle: true,
+              font: { family: 'DM Sans', size: 12 }
+            }
+          }
+        }
+      }
     };
   },
   props: {
@@ -130,14 +130,17 @@ export default {
     calculatePercentage,
     roundToDecimals,
     getPercentage(array: any) {
-      return `${
-        calculatePercentage(array[array.length - 1]?.y, array[0]?.y, '-') <= 0 ? '' : '+'
-      }${calculatePercentage(array[array.length - 1]?.y, array[0]?.y, '-')}%`;
+      const first = array[0]?.y;
+      const last = array[array.length - 1]?.y;
+      const change = calculatePercentage(first, last, '-');
+      return `${change <= 0 ? '' : '+'}${change}%`;
     }
   },
 
   mounted() {
     const chartConfig = {
+      responsive: true,
+      maintainAspectRatio: false,
       interaction: {
         intersect: false,
         mode: 'index'
@@ -145,7 +148,14 @@ export default {
       scales: {
         y: {
           beginAtZero: false,
-          stacked: 'single'
+          stacked: false,
+          grid: {
+            color: 'rgba(148, 163, 184, 0.25)'
+          },
+          ticks: {
+            color: '#64748b',
+            font: { family: 'DM Sans', size: 11 }
+          }
         },
         x: {
           type: 'time',
@@ -156,10 +166,25 @@ export default {
             date: {
               locale: 'nl'
             }
+          },
+          grid: {
+            display: false
+          },
+          ticks: {
+            color: '#64748b',
+            font: { family: 'DM Sans', size: 11 }
           }
         }
       },
+      spanGaps: true,
       plugins: {
+        legend: {
+          labels: {
+            boxWidth: 10,
+            usePointStyle: true,
+            font: { family: 'DM Sans', size: 12 }
+          }
+        },
         tooltip: {
           callbacks: {},
           position: 'nearest'
@@ -171,10 +196,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-.amountText {
-  font-weight: 100;
-  color: var(--va-on-background-primary);
-}
-</style>

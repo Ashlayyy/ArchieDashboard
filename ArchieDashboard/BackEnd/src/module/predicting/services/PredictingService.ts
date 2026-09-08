@@ -12,6 +12,10 @@ export default class PredictingService implements IPredictingService {
   constructor(@inject('Logger') private readonly Logger: ILogger) {}
 
   async predict(data: any[], months: number): Promise<{ predictedData: number[]; dateArray: number[] | string[] }> {
+    if (!Array.isArray(data) || data.length === 0) {
+      return { predictedData: [], dateArray: [] };
+    }
+
     const predictedData = [];
     const dateArray = [];
     const trainingData: [number, number][] = [];

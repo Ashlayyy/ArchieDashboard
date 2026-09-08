@@ -1,9 +1,0 @@
-@use './abstracts/variables.scss';
-
-html {
-  color-scheme: light !important;
-}
-
-body {
-  background: map-get(variables.$colors, 'globalBackground');
-}

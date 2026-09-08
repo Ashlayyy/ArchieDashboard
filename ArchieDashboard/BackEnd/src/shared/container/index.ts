@@ -1,3 +1,4 @@
+import '../../polyfills/node26';
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 

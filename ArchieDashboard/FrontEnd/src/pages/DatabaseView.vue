@@ -2,15 +2,19 @@
   <main
     :key="Configs.charts.totalGigabytes"
     class="dashboard"
-    v-if="Configs?.charts?.totalGigabytes && loadingDone == true"
+    v-if="loadingDone"
   >
-    <v-btn size="large" rounded="xl" prepend-icon="mdi-chevron-left" variant="tonal">
-      <router-link :to="{ name: 'home' }" class="backLink">
-        {{ $t('getBackButton') }}
-      </router-link>
-    </v-btn>
-    <div class="dashboard_title">{{ $t('dashboardTitle') }} - {{ currentDatabase }}</div>
-    <div></div>
+    <div v-if="noData" class="dashboard_empty">
+      <p>{{ $t('select.geenResultaat') }}</p>
+    </div>
+    <div class="dashboard_header">
+      <v-btn size="small" rounded="xl" prepend-icon="mdi-chevron-left" variant="tonal" color="#0f766e">
+        <router-link :to="{ name: 'home' }" class="backLink">
+          {{ $t('getBackButton') }}
+        </router-link>
+      </v-btn>
+      <div class="dashboard_title">{{ $t('dashboardTitle') }} — {{ currentDatabase }}</div>
+    </div>
     <div class="dashboardCollum">
       <GraphWrapper
         :key="Configs.charts.totalGigabytes"
@@ -61,7 +65,7 @@
         :title="'typesOfData.title'"
       />
 
-      <div>
+      <div class="growth-slot">
         <GrowthPicker @update:selectedItem="updateGrowthFilter($event)" />
         <GraphWrapper
           :key="Configs.charts.growth.datasets"
@@ -119,9 +123,11 @@ import { MetricsFilter } from '../types/MetricsFilter';
 import { useFilterStore } from '../stores/filters';
 import { update } from '../stores/update';
 import differenceTwoDates from '../utils/Transforming/differenceTwoDates';
+import { isEmptyMetrics } from '../utils/normalizeMetrics';
 
 const loadingDone = ref(false);
 const loadError = ref(false);
+const noData = ref(false);
 const Configs: IConfigs = reactive({
   charts: {
     totalGigabytes: [],
@@ -196,11 +202,16 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
     });
     const weekMetrics = await metricsService.weekMetrics(formattedFilter);
     const predictionMetrics = await metricsService.predictionMetrics(formattedFilter);
-    const growthMetrics = await growth(metrics.data.metrics);
+    const metricsData = metrics.data;
+    const allMetricsData = allMetrics.data;
+    const statisticsData = statistics.data;
+    const allStatisticsData = allStatistics.data;
+    const growthMetrics = (await growth(metricsData.metrics)) ?? { GB: [], MFCP: [], Corresp: [], Users: [] };
     const closeToLimit = await metricsService.closeToLimit();
     const averageGb: any[] = [];
     const averageUs: any[] = [];
     const averageActUs: any[] = [];
+    noData.value = isEmptyMetrics(metricsData);
 
     if (closeToLimit === 1) {
       push.warning({
@@ -220,101 +231,69 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
       });
     }
 
-    for (let i = 0; i < allMetrics.data.metrics.length; i++) {
-      if (allMetrics.data.metrics[i].Type === 'database_size') {
+    for (let i = 0; i < allMetricsData.metrics.length; i++) {
+      if (allMetricsData.metrics[i].Type === 'database_size') {
         averageGb.push({
           x: '',
-          y: calculateAverage(allMetrics.data.metrics[i].IntData, allStatistics.data.Length)
+          y: calculateAverage(allMetricsData.metrics[i].IntData, allStatisticsData.Length)
         });
       }
-      if (allMetrics.data.metrics[i].Type === 'users') {
+      if (allMetricsData.metrics[i].Type === 'users') {
         averageUs.push({
           x: '',
-          y: allMetrics.data.metrics[i]
-            ? Math.round(calculateAverage(allMetrics.data.metrics[i].IntData, allStatistics.data.Length))
+          y: allMetricsData.metrics[i]
+            ? Math.round(calculateAverage(allMetricsData.metrics[i].IntData, allStatisticsData.Length))
             : 0
         });
       }
-      if (allMetrics.data.metrics[i].Type === 'active_users') {
+      if (allMetricsData.metrics[i].Type === 'active_users') {
         averageActUs.push({
           x: '',
-          y: allMetrics.data.metrics[i]
-            ? Math.round(calculateAverage(allMetrics.data.metrics[i].IntData, allStatistics.data.Length))
+          y: allMetricsData.metrics[i]
+            ? Math.round(calculateAverage(allMetricsData.metrics[i].IntData, allStatisticsData.Length))
             : 0
         });
       }
     }
 
     for (let i = 0; i < averageGb.length; i++) {
-      if (averageGb.length !== averageUs.length) {
-        averageUs.push({
-          x: '',
-          y: 0
-        });
-      }
-
-      if (averageGb.length !== averageActUs.length) {
-        averageActUs.push({
-          x: '',
-          y: 0
-        });
-      }
+      averageGb[i].x = allMetricsData.chartData.GB[i]?.x || averageGb[i].x;
+    }
+    for (let i = 0; i < averageUs.length; i++) {
+      averageUs[i].x = allMetricsData.chartData.US[i]?.x || averageUs[i].x;
+    }
+    for (let i = 0; i < averageActUs.length; i++) {
+      averageActUs[i].x = allMetricsData.chartData.ACT_US[i]?.x || averageActUs[i].x;
     }
 
-    for (let i = 0; i < allMetrics.data.chartData.GB.length; i++) {
-      averageGb[i].x = allMetrics.data.chartData.GB[i].x;
-      averageUs[i].x = !allMetrics.data.chartData.US[i]
-        ? allMetrics.data.chartData.GB[i].x
-        : allMetrics.data.chartData.US[i].x;
-      averageActUs[i].x = !allMetrics.data.chartData.ACT_US[i]
-        ? allMetrics.data.chartData.GB[i].x
-        : allMetrics.data.chartData.ACT_US[i].x;
-    }
+    const averageGbByDate = new Map(allMetricsData.chartData.GB.map((point, i) => [point.x, averageGb[i]?.y]));
+    const averageUsByDate = new Map(allMetricsData.chartData.US.map((point, i) => [point.x, averageUs[i]?.y]));
+    const averageActUsByDate = new Map(
+      allMetricsData.chartData.ACT_US.map((point, i) => [point.x, averageActUs[i]?.y])
+    );
 
-    for (let i = 0; i < metrics.data.chartData.GB.length; i++) {
-      if (metrics.data.chartData.ACT_US.length !== metrics.data.chartData.GB.length) {
-        metrics.data.chartData.ACT_US.push({
-          x: String(metrics.data.chartData.GB[i].x),
-          y: 0
-        });
-      }
-
-      if (metrics.data.chartData.US.length !== metrics.data.chartData.GB.length) {
-        metrics.data.chartData.US.push({
-          x: String(metrics.data.chartData.GB[i].x),
-          y: 0
-        });
-      }
-    }
-
-    const percentageAverageGb = [];
-    const percentageAverageUs = [];
-    const percentageAverageActUs = [];
-
-    for (let i = 0; i < metrics.data.chartData.US.length; i++) {
-      percentageAverageGb.push({
-        x: metrics.data.chartData.GB[i].x,
-        y: Math.round(calculatePercentage(averageGb[i].y, metrics.data.chartData.GB[i].y, ''))
-      });
-      percentageAverageUs.push({
-        x: metrics.data.chartData.US[i].x,
-        y: Math.round(calculatePercentage(averageUs[i].y, metrics.data.chartData.US[i].y, ''))
-      });
-      percentageAverageActUs.push({
-        x: metrics.data.chartData.ACT_US[i].x,
-        y: Math.round(calculatePercentage(averageActUs[i].y, metrics.data.chartData.ACT_US[i].y, ''))
-      });
-    }
+    const percentageAverageGb = metricsData.chartData.GB.map((point) => ({
+      x: point.x,
+      y: Math.round(calculatePercentage(averageGbByDate.get(point.x), point.y, ''))
+    }));
+    const percentageAverageUs = metricsData.chartData.US.map((point) => ({
+      x: point.x,
+      y: Math.round(calculatePercentage(averageUsByDate.get(point.x), point.y, ''))
+    }));
+    const percentageAverageActUs = metricsData.chartData.ACT_US.map((point) => ({
+      x: point.x,
+      y: Math.round(calculatePercentage(averageActUsByDate.get(point.x), point.y, ''))
+    }));
 
     graphHandlerData.value = new GraphHandler(
-      metrics.data.chartData,
-      [metrics.data.chartData.US, metrics.data.chartData.ACT_US],
+      metricsData.chartData,
+      [metricsData.chartData.US, metricsData.chartData.ACT_US],
       percentageAverageGb,
       [percentageAverageUs, percentageAverageActUs],
       growthMetrics,
       predictionMetrics.data,
       weekMetrics.data,
-      statistics.data.Types,
+      statisticsData.Types,
       true,
       t
     );
@@ -340,8 +319,8 @@ const getMetrics = async (filter?: MetricsFilter): Promise<boolean> => {
     Configs.charts.weekData = graphHandlerData.value.charts.weekData;
 
     pending.resolve({
-      title: 'Success',
-      message: 'Metrics fetched successfully.',
+      title: noData.value ? 'No data' : 'Success',
+      message: noData.value ? 'No metrics available. Showing an empty dashboard.' : 'Metrics fetched successfully.',
       duration: 1000,
       ariaLive: 'polite',
       ariaRole: 'status'
@@ -420,98 +399,19 @@ const updateGrowthFilter = (event: string) => {
 };
 </script>
 
-<style lang="scss">
-@use '../assets/sass/abstracts/variables.scss';
-
-.dashboard {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 1rem;
-  flex-direction: column;
-  text-align: start;
-  padding: map-get(variables.$padding, 'globalPadding');
-
-  &Collum {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5rem;
-    flex-direction: row;
-    padding: 2rem;
-    width: 100%;
-    height: max-content;
-  }
-
-  &_loading {
-    display: flex;
-    width: 100vw;
-    height: 75vh;
-    justify-content: center;
-    align-items: center;
-  }
-}
-
-.backLink {
-  color: var(--va-on-background-primary);
-  text-decoration: none;
-}
-
-.chartWrapper {
+<style lang="scss" scoped>
+.dashboard_header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: max-content;
-}
-
-.leftSide {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  flex-direction: column;
-  text-align: start;
-  padding: map-get(variables.$padding, 'chartPadding');
-  color: map-get(variables.$colors, 'black');
-}
-
-.percentage.green {
-  color: map-get(variables.$colors, 'green');
-}
-.percentage.red {
-  color: map-get(variables.$colors, 'red');
-}
-
-.rightSide {
-  padding: map-get(variables.$padding, 'chartPadding');
-  color: map-get(variables.$colors, 'black');
-}
-
-.chartWrap {
-  width: 500px;
-  aspect-ratio: 2/1;
+  gap: 0.85rem;
+  flex-wrap: wrap;
 }
 
 .loading {
-  width: 90vw;
+  width: 100%;
+  min-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: max-content;
-}
-
-@media screen and (max-width: 1200px), screen and (max-device-width: 1200px) {
-  .dashboard {
-    &Collum {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5rem;
-      flex-direction: column-reverse;
-      padding: 2rem;
-      width: 100%;
-      height: max-content;
-    }
-  }
 }
 </style>

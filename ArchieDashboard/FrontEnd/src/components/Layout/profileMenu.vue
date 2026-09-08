@@ -7,7 +7,7 @@
     :open-delay="0"
     :close-delay="0"
   >
-    <v-card>
+    <v-card rounded="lg" class="profile-card">
       <v-card-text>
         <div class="mx-auto text-center">
           <h3>{{ user?.name }}</h3>

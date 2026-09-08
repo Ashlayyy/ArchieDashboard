@@ -1,4 +1,4 @@
-# Archie Dashboard
+# DataMetrics
 
 - npm start 
     - Start Backend + Frontend

@@ -4,6 +4,7 @@ import IBackupMetricsController from '../interfaces/IBackupMetricsController';
 import { ApiRequest } from '../types/Request/ApiRequest';
 import { ApiRequestResult } from '../types/Request/ApiRequestResult';
 import validateMetricsBody from '../../../helpers/validateMetricsBody';
+import { emptyMetrics, emptyStatistics } from '../../../helpers/emptyMetrics';
 
 @injectable()
 export default class BackupMetricsController implements IBackupMetricsController {
@@ -49,8 +50,8 @@ export default class BackupMetricsController implements IBackupMetricsController
       };
     } catch (error) {
       return {
-        status: 503,
-        data: 'There has been an error. Please try again later.'
+        status: 200,
+        data: emptyMetrics()
       };
     }
   }
@@ -105,8 +106,8 @@ export default class BackupMetricsController implements IBackupMetricsController
       };
     } catch (error) {
       return {
-        status: 503,
-        data: 'There has been an error. Please try again later.'
+        status: 200,
+        data: emptyStatistics()
       };
     }
   }
@@ -149,8 +150,8 @@ export default class BackupMetricsController implements IBackupMetricsController
       };
     } catch (error) {
       return {
-        status: 503,
-        data: 'There has been an error. Please try again later.'
+        status: 200,
+        data: []
       };
     }
   }
@@ -164,8 +165,8 @@ export default class BackupMetricsController implements IBackupMetricsController
       };
     } catch (error) {
       return {
-        status: 503,
-        data: 'There has been an error. Please try again later.'
+        status: 200,
+        data: []
       };
     }
   }
@@ -179,8 +180,8 @@ export default class BackupMetricsController implements IBackupMetricsController
       };
     } catch (error) {
       return {
-        status: 503,
-        data: 'There has been an error. Please try again later.'
+        status: 200,
+        data: []
       };
     }
   }

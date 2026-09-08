@@ -15,7 +15,8 @@
       ></v-text-field>
       <v-btn
         :disabled="disableCompareButton"
-        variant="tonal"
+        variant="flat"
+        color="#0f766e"
         @click="sendToCompare"
       >
         {{ $t('buttonTekst.compare') }}
@@ -153,26 +154,24 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@use '../../assets/sass/abstracts/variables.scss';
-
 .empty,
 .loading {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
   flex-direction: column;
-  width: calc(100vw - (map-get(variables.$padding, 'globalPadding') * 2));
+  width: 100%;
   height: 100%;
 }
 
 .searchField {
-  width: calc(35rem - (map-get(variables.$padding, 'globalPadding') * 2));
+  width: 100%;
+  max-width: 42rem;
   padding-bottom: 1rem;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-direction: row;
-  gap: 2rem;
-  padding: 1 5rem;
+  gap: 1rem;
 }
 </style>

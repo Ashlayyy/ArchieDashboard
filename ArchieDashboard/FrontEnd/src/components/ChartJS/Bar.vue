@@ -1,26 +1,13 @@
 <template>
-  <Bar :data="chartData" :options="chartOptions" />
+  <Bar :data="chartData" :options="resolvedOptions" />
 </template>
 
 <script>
 import { Bar } from 'vue-chartjs';
 
-const options = {
-  scales: {
-    y: {
-      beginAtZero: false
-    }
-  }
-};
-
 export default {
   name: 'BarChart',
   components: { Bar },
-  data() {
-    return {
-      options
-    };
-  },
   props: {
     chartData: {
       type: Object,
@@ -28,7 +15,16 @@ export default {
     },
     chartOptions: {
       type: Object,
-      default: () => {}
+      default: () => ({})
+    }
+  },
+  computed: {
+    resolvedOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        ...this.chartOptions
+      };
     }
   }
 };

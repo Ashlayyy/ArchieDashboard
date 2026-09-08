@@ -1,5 +1,23 @@
 import 'chartjs-adapter-luxon';
 import transformSize from '../Transforming/transformSize';
+import { sortChartPoints } from '../chartPoints';
+
+const LINE_COLORS = ['#0f766e', '#f59e0b', '#2563eb', '#db2777'];
+
+function lineDataset(label: string, data: any, colorIndex: number) {
+  return {
+    label,
+    data: sortChartPoints(data),
+    fill: false,
+    borderColor: LINE_COLORS[colorIndex % LINE_COLORS.length],
+    backgroundColor: LINE_COLORS[colorIndex % LINE_COLORS.length],
+    borderWidth: 2,
+    tension: 0.15,
+    spanGaps: true,
+    pointRadius: 2,
+    pointHoverRadius: 5
+  };
+}
 
 export default class GraphHandler {
   charts: any = {
@@ -30,11 +48,20 @@ export default class GraphHandler {
     translationNeeded?: boolean,
     translate?: any
   ) {
-    this.translate = translate;
+    this.translate = translate || ((key: string) => key);
     this.translationNeeded = translationNeeded || false;
-    this.createLineCharts(totalGB, totalUsers, averageGB, averageUsers, growth, predicted);
-    this.createBarChart(WeekDataArray);
-    this.createPieCharts(TypeArray);
+    const safeGrowth = growth ?? { GB: [], MFCP: [], Corresp: [], Users: [] };
+    const emptySeries = { predictedData: [], dateArray: [] };
+    const safePredicted = {
+      predictedGB: predicted?.predictedGB ?? emptySeries,
+      predictedMFCP: predicted?.predictedMFCP ?? emptySeries,
+      predictedCO: predicted?.predictedCO ?? emptySeries,
+      predictedUS: predicted?.predictedUS ?? emptySeries,
+      predictedACTUS: predicted?.predictedACTUS ?? emptySeries
+    };
+    this.createLineCharts(totalGB ?? {}, totalUsers ?? [[], []], averageGB ?? [], averageUsers ?? [[], []], safeGrowth, safePredicted);
+    this.createBarChart(Array.isArray(WeekDataArray) ? WeekDataArray : []);
+    this.createPieCharts(Array.isArray(TypeArray) ? TypeArray : []);
     this.createConfig();
   }
 
@@ -48,20 +75,8 @@ export default class GraphHandler {
   ) {
     this.charts.totalGigabytes = {
       datasets: [
-        {
-          label: this.translate('total.Gigabytes.lineOne'),
-          data: totalGB.GB,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        },
-        {
-          label: this.translate('total.Gigabytes.lineTwo'),
-          data: totalGB.CO,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        }
+        lineDataset(this.translate('total.Gigabytes.lineOne'), totalGB.GB ?? [], 0),
+        lineDataset(this.translate('total.Gigabytes.lineTwo'), totalGB.CO ?? [], 1)
       ],
       responsive: true,
       maintainAspectRatio: false
@@ -69,20 +84,8 @@ export default class GraphHandler {
 
     this.charts.totalUsers = {
       datasets: [
-        {
-          label: this.translate('total.Users.lineOne'),
-          data: totalUsers[0],
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        },
-        {
-          label: this.translate('total.Users.lineTwo'),
-          data: totalUsers[1],
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        }
+        lineDataset(this.translate('total.Users.lineOne'), totalUsers[0], 0),
+        lineDataset(this.translate('total.Users.lineTwo'), totalUsers[1], 1)
       ],
       responsive: true,
       maintainAspectRatio: false
@@ -90,15 +93,13 @@ export default class GraphHandler {
 
     this.charts.averageGigabytes = {
       datasets: [
-        {
-          label: this.translationNeeded
+        lineDataset(
+          this.translationNeeded
             ? this.translate('averageCompany.Gigabytes.lineOne')
             : this.translate('average.Gigabytes.lineOne'),
-          data: averageGB,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        }
+          averageGB,
+          0
+        )
       ],
       responsive: true,
       maintainAspectRatio: false
@@ -106,103 +107,71 @@ export default class GraphHandler {
 
     this.charts.averageUsers = {
       datasets: [
-        {
-          label: this.translationNeeded
+        lineDataset(
+          this.translationNeeded
             ? this.translate('averageCompany.Users.lineOne')
             : this.translate('average.Users.lineOne'),
-          data: averageUsers[0],
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        },
-        {
-          label: this.translationNeeded
+          averageUsers[0],
+          0
+        ),
+        lineDataset(
+          this.translationNeeded
             ? this.translate('averageCompany.Users.lineTwo')
             : this.translate('average.Users.lineTwo'),
-          data: averageUsers[1],
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        }
+          averageUsers[1],
+          1
+        )
       ],
       responsive: true,
       maintainAspectRatio: false
     };
 
     this.charts.growth = {
-      datasets: [
-        {
-          label: this.translate('growth.types.1'),
-          data: growth.GB,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0
-        }
-      ],
+      datasets: [lineDataset(this.translate('growth.types.1'), growth.GB ?? [], 0)],
       responsive: true,
       maintainAspectRatio: false
     };
 
     this.dataGrowth = [
-      {
-        label: this.translate('growth.types.1'),
-        data: growth.GB,
-        fill: true,
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0
-      },
-      {
-        label: this.translate('growth.types.2'),
-        data: growth.MFCP,
-        fill: true,
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0
-      },
-      {
-        label: this.translate('growth.types.3'),
-        data: growth.Corresp,
-        fill: true,
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0
-      },
-      {
-        label: this.translate('growth.types.4'),
-        data: growth.Users,
-        fill: true,
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0
-      }
+      lineDataset(this.translate('growth.types.1'), growth.GB ?? [], 0),
+      lineDataset(this.translate('growth.types.2'), growth.MFCP ?? [], 1),
+      lineDataset(this.translate('growth.types.3'), growth.Corresp ?? [], 0),
+      lineDataset(this.translate('growth.types.4'), growth.Users ?? [], 1)
     ];
 
     this.charts.predicted = {
-      labels: predicted.predictedGB.dateArray,
+      labels: predicted.predictedGB?.dateArray ?? [],
       datasets: [
         {
           label: this.translate('predicted.types.1'),
-          data: predicted.predictedGB.predictedData,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
+          data: predicted.predictedGB?.predictedData ?? [],
+          fill: false,
+          borderColor: LINE_COLORS[0],
+          backgroundColor: LINE_COLORS[0],
           tension: 0
         },
         {
           label: this.translate('predicted.types.2'),
-          data: predicted.predictedMFCP.predictedData,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
+          data: predicted.predictedMFCP?.predictedData ?? [],
+          fill: false,
+          borderColor: LINE_COLORS[1],
+          backgroundColor: LINE_COLORS[1],
           tension: 0
         },
         {
           label: this.translate('predicted.types.3'),
-          data: predicted.predictedCO.predictedData,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
+          data: predicted.predictedCO?.predictedData ?? [],
+          fill: false,
+          borderColor: LINE_COLORS[2],
+          backgroundColor: LINE_COLORS[2],
           tension: 0
         },
         {
           label: this.translate('predicted.types.4'),
-          data: predicted.predictedUS.predictedData,
-          fill: true,
-          borderColor: 'rgb(75, 192, 192)',
+          data: predicted.predictedUS?.predictedData ?? [],
+          fill: false,
+          borderColor: LINE_COLORS[3],
+          backgroundColor: LINE_COLORS[3],
           tension: 0
         }
       ],
@@ -221,9 +190,9 @@ export default class GraphHandler {
             if (item.Type === 'database_size') return transformSize(item.IntData);
             else return;
           }).filter((item) => item !== undefined && item !== null),
-          fill: true,
-          backgroundColor: 'rgb(75, 192, 192)',
-          borderColor: 'rgb(75, 192, 192)',
+          fill: false,
+          backgroundColor: LINE_COLORS[0],
+          borderColor: LINE_COLORS[0],
           tension: 0
         },
         {
@@ -232,9 +201,9 @@ export default class GraphHandler {
             if (item.Type === 'mfcp_size') return transformSize(item.IntData);
             else return;
           }).filter((item) => item !== undefined && item !== null),
-          fill: true,
-          backgroundColor: 'rgb(75, 192, 192)',
-          borderColor: 'rgb(75, 192, 192)',
+          fill: false,
+          backgroundColor: LINE_COLORS[1],
+          borderColor: LINE_COLORS[1],
           tension: 0
         },
         {
@@ -243,9 +212,9 @@ export default class GraphHandler {
             if (item.Type === 'corresp_size') return transformSize(item.IntData);
             else return;
           }).filter((item) => item !== undefined && item !== null),
-          fill: true,
-          backgroundColor: 'rgb(75, 192, 192)',
-          borderColor: 'rgb(75, 192, 192)',
+          fill: false,
+          backgroundColor: LINE_COLORS[2],
+          borderColor: LINE_COLORS[2],
           tension: 0
         },
         {
@@ -254,9 +223,9 @@ export default class GraphHandler {
             if (item.Type === 'users') return item.IntData;
             else return;
           }).filter((item) => item !== undefined && item !== null),
-          fill: true,
-          backgroundColor: 'rgb(75, 192, 192)',
-          borderColor: 'rgb(75, 192, 192)',
+          fill: false,
+          backgroundColor: LINE_COLORS[3],
+          borderColor: LINE_COLORS[3],
           tension: 0
         },
         {
@@ -265,9 +234,9 @@ export default class GraphHandler {
             if (item.Type === 'active_users') return item.IntData;
             else return;
           }).filter((item) => item !== undefined && item !== null),
-          fill: true,
-          backgroundColor: 'rgb(75, 192, 192)',
-          borderColor: 'rgb(75, 192, 192)',
+          fill: false,
+          backgroundColor: '#64748b',
+          borderColor: '#64748b',
           tension: 0
         }
       ],
@@ -277,18 +246,21 @@ export default class GraphHandler {
   }
 
   async createPieCharts(TypeArray: Array<any>) {
-    const labelArray = TypeArray.map((type) =>
-      type.Type === 'mfcp_size'
-        ? (type.Type = 'MFCP')
-        : type.Type.replace('_', ' ').split(' ')[0].split('')[0].toUpperCase() +
-          type.Type.replace('_', ' ').split(' ')[0].slice(1)
-    );
+    const types = Array.isArray(TypeArray) ? TypeArray : [];
+    const labelArray = types.map((type) => {
+      const name = String(type?.Type || 'No data available');
+      if (name === 'mfcp_size') {
+        return 'MFCP';
+      }
+      const firstWord = name.replace('_', ' ').split(' ')[0];
+      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+    });
     this.charts.types = {
       labels: labelArray,
       datasets: [
         {
-          data: TypeArray.map((type) => type.Amount),
-          backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)', 'rgb(255, 205, 86)'],
+          data: types.map((type) => type.Amount),
+          backgroundColor: ['#0f766e', '#f59e0b', '#2563eb', '#db2777', '#64748b'],
           hoverOffset: 4
         }
       ]
@@ -304,7 +276,7 @@ export default class GraphHandler {
       scales: {
         y: {
           beginAtZero: false,
-          stacked: true
+          stacked: false
         },
         x: {
           type: 'time',

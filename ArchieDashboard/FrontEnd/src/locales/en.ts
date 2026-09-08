@@ -1,6 +1,8 @@
 export default {
-  headerTitle: 'Dashboard Archie',
-  dashboardTitle: 'Dashboard',
+  headerTitle: 'DataMetrics',
+  headerSubtitle: 'Backup metrics',
+  dashboardTitle: 'Overview',
+  loginTagline: 'Sign in to view backup size and usage trends.',
   getBackButton: 'Back to overview',
   lastUpdated: 'Data last updated',
   buttonTekst: {

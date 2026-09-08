@@ -1,12 +1,18 @@
 {
-  "name": "archiedashboard",
+  "name": "datametrics",
   "version": "1.0.0",
-  "description": "Dashboard for Archie",
+  "description": "DataMetrics dashboard",
   "main": "index.js",
   "scripts": {
     "build": "concurrently \"npm run build --prefix ./BackEnd\" \"npm run build --prefix ./FrontEnd\"",
     "start": "npm run start --prefix ./BackEnd",
-    "i-start": "npm install && concurrently \"cd ./BackEnd && npm install && npm run dev\" \"cd ./FrontEnd && npm install && npm run dev\""
+    "i-start": "npm install && concurrently \"cd ./BackEnd && npm install && npm run dev\" \"cd ./FrontEnd && npm install && npm run dev\"",
+    "db:up": "npm --prefix .. run db:up",
+    "db:seed": "npm --prefix .. run db:seed",
+    "db:reset": "npm --prefix .. run db:reset",
+    "db:backup": "npm --prefix .. run db:backup",
+    "db:anonymize": "npm --prefix .. run db:anonymize",
+    "db:restore": "npm --prefix .. run db:restore"
   },
   "dependencies": {
     "concurrently": "^8.2.2"

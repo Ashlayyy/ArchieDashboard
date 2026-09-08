@@ -1,65 +1,85 @@
 import { MetricsFilter } from '@/types/MetricsFilter';
 import IMetricsService from '../interfaces/IMetricsService';
 import { ChartCoordinate } from '../types/chartCoordinate';
+import { ApiResult } from '../types/ApiResult';
 import roundToDecimals from '../utils/Transforming/roundToDecimals';
+import {
+  emptyChartData,
+  normalizeMetricsPayload,
+  normalizePredictionPayload,
+  normalizeStatisticsPayload
+} from '../utils/normalizeMetrics';
 import apiService from './ApiService.service';
+
+const emptyMetricsResult = (): ApiResult => ({
+  status: 200,
+  data: {
+    metrics: [],
+    chartData: emptyChartData()
+  }
+});
+
+const emptyStatisticsResult = (): ApiResult => ({
+  status: 200,
+  data: normalizeStatisticsPayload(undefined)
+});
 
 export default class MetricsService implements IMetricsService {
   constructor(private ApiService: apiService = new apiService()) {}
 
-  statistics = async (filter?: MetricsFilter) => {
+  private async safeFetch(endpoint: string, fallback: ApiResult, filter?: MetricsFilter, options?: RequestInit) {
     try {
-      const response = await this.ApiService.fetchApi('/database/metrics/statistics', undefined, filter);
-      if (!response) throw new Error('No response');
-      if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
+      const response = await this.ApiService.fetchApi(endpoint, options, filter);
+      if (!response) {
+        return fallback;
+      }
+      if (response.status && response.status >= 400) {
+        return fallback;
+      }
       return response;
-    } catch (error: any) {
-      throw new Error(error);
+    } catch {
+      return fallback;
     }
+  }
+
+  statistics = async (filter?: MetricsFilter) => {
+    const response = await this.safeFetch('/database/metrics/statistics', emptyStatisticsResult(), filter);
+    return {
+      ...response,
+      data: normalizeStatisticsPayload(response.data)
+    };
   };
 
   metrics = async (filter?: MetricsFilter) => {
-    try {
-      const response = await this.ApiService.fetchApi('/database/metrics', undefined, filter);
-      if (!response) throw new Error('No response');
-      if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error);
-    }
+    const response = await this.safeFetch('/database/metrics', emptyMetricsResult(), filter);
+    return {
+      ...response,
+      data: normalizeMetricsPayload(response.data)
+    };
   };
 
   weekMetrics = async (filter?: MetricsFilter) => {
-    try {
-      const response = await this.ApiService.fetchApi('/database/metrics/week', undefined, filter);
-      if (!response) throw new Error('No response');
-      if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error);
-    }
+    const response = await this.safeFetch('/database/metrics/week', { status: 200, data: [] }, filter);
+    return {
+      ...response,
+      data: Array.isArray(response.data) ? response.data : []
+    };
   };
 
   gridMetrics = async () => {
-    try {
-      const response = await this.ApiService.fetchApi('/database/metrics/grid');
-      if (!response) throw new Error('No response');
-      if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error);
-    }
+    const response = await this.safeFetch('/database/metrics/grid', { status: 200, data: [] });
+    return {
+      ...response,
+      data: Array.isArray(response.data) ? response.data : []
+    };
   };
 
   predictionMetrics = async (filter?: MetricsFilter) => {
-    try {
-      const response = await this.ApiService.fetchApi('/predict', undefined, filter);
-      if (!response) throw new Error('No response');
-      if (response.status !== 200) throw new Error(`${response.status} - ${response.data}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error);
-    }
+    const response = await this.safeFetch('/predict', { status: 200, data: normalizePredictionPayload(undefined) }, filter);
+    return {
+      ...response,
+      data: normalizePredictionPayload(response.data)
+    };
   };
 
   averageMetrics = async (data: ChartCoordinate[], length: number) => {
@@ -74,7 +94,7 @@ export default class MetricsService implements IMetricsService {
   closeToLimit = async (): Promise<number> => {
     try {
       const response = await this.ApiService.fetchApi('/database/metrics', { cache: 'no-store' });
-      if (!response) throw new Error('No response');
+      if (!response) return 0;
       const remaining = Number(response.headers?.['x-ratelimit-remaining']);
       if (remaining < 25 && remaining > 5) {
         return 1;
@@ -83,8 +103,8 @@ export default class MetricsService implements IMetricsService {
         return 2;
       }
       return 0;
-    } catch (error: any) {
-      throw new Error(error);
+    } catch {
+      return 0;
     }
   };
 }

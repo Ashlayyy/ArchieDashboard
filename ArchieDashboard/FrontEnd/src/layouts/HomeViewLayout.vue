@@ -115,9 +115,14 @@ watch(
 );
 
 const fetchDatabases = async () => {
-  const response = await apiService.fetchApi('/database/metrics/list');
   databases = [];
-  response.data.forEach((database: string) => databases.push(database));
+  try {
+    const response = await apiService.fetchApi('/database/metrics/list');
+    const list = Array.isArray(response.data) ? response.data : [];
+    list.forEach((database: string) => databases.push(database));
+  } catch {
+    databases = [];
+  }
 };
 
 const formatDates = async (dates: number[]) => {
@@ -168,6 +173,7 @@ onMounted(async () => {
     padding: 1rem;
     min-width: 25rem;
     max-width: 25rem;
+    background: #fff;
   }
 
   &_filter {
@@ -176,9 +182,11 @@ onMounted(async () => {
   }
 
   &_content {
-    padding-top: 5rem;
+    padding-top: 4.25rem;
     width: 100%;
     height: 100%;
+    min-height: 100vh;
+    background: var(--dm-bg);
   }
 }
 

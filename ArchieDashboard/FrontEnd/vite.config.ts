@@ -16,5 +16,9 @@ export default defineConfig({
     // This ensures process is not referenced in the browser
     'process.env': {}
   },
-  envPrefix: 'VITE_'
+  envPrefix: 'VITE_',
+  server: {
+    port: 5174,
+    strictPort: true
+  }
 });

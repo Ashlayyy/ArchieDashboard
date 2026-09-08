@@ -1,6 +1,10 @@
 import { MetricsMapperResult } from '../../module/backupmetrics/types/Mappers/MetricsMapper';
 import { ChartCoordinate } from '../../module/backupmetrics/types/Mappers/ChartCoordinate';
 
+function sortPoints(points: ChartCoordinate[]): ChartCoordinate[] {
+  return [...points].sort((a, b) => Date.parse(String(a.x)) - Date.parse(String(b.x)));
+}
+
 export default (data: MetricsMapperResult[]) => {
   const GB: ChartCoordinate[] = [];
   const MFCP: ChartCoordinate[] = [];
@@ -48,15 +52,17 @@ export default (data: MetricsMapperResult[]) => {
     }
   });
 
-  for (let i = 0; i < GB.length; i += 1) {
-    GB[i].y += MFCP[i].y;
-  }
+  const mfcpByDate = new Map(sortPoints(MFCP).map((point) => [point.x, point.y]));
+  const totalGb = sortPoints(GB).map((point) => ({
+    x: point.x,
+    y: point.y + (mfcpByDate.get(point.x) ?? 0)
+  }));
 
   return {
-    GB,
-    MFCP,
-    CO,
-    US,
-    ACT_US
+    GB: totalGb,
+    MFCP: sortPoints(MFCP),
+    CO: sortPoints(CO),
+    US: sortPoints(US),
+    ACT_US: sortPoints(ACT_US)
   };
 };

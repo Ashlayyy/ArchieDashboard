@@ -1,14 +1,24 @@
 import calculateDifferenceData from './calculateDifferenceData';
 
 export default async function growth(data: any) {
+  const list = Array.isArray(data) ? data : [];
   const GrowthGBArray: any = [];
   const GrowthMFCPArray: any = [];
   const GrowthCorrespArray: any = [];
   const GrowthUsersArray: any = [];
 
-  for (let i = 0; i < (data.length ? data.length : 1); i++) {
-    if (!data[i]) return;
-    if (data[i].Type === 'database_size') {
+  if (list.length === 0) {
+    return {
+      GB: [],
+      MFCP: [],
+      Corresp: [],
+      Users: []
+    };
+  }
+
+  for (let i = 0; i < list.length; i++) {
+    if (!list[i]) continue;
+    if (list[i].Type === 'database_size') {
       GrowthGBArray.push(data[i]);
     } else if (data[i].Type === 'mfcp_size') {
       GrowthMFCPArray.push(data[i]);

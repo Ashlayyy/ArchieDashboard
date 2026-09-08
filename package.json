@@ -1,0 +1,15 @@
+{
+  "name": "datametrics",
+  "private": true,
+  "description": "Local DataMetrics test database helpers",
+  "scripts": {
+    "db:up": "node db/seed.mjs --wait",
+    "db:seed": "node db/seed.mjs",
+    "db:reset": "node db/seed.mjs --reset",
+    "db:backup": "node db/backup.mjs",
+    "db:anonymize": "node db/anonymize.mjs",
+    "db:restore": "node db/restore.mjs",
+    "db:up:docker": "docker compose up -d && node db/seed.mjs --wait --docker",
+    "db:down": "docker compose down"
+  }
+}

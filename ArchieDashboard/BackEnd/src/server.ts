@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import './polyfills/node26';
 import 'reflect-metadata';
 import { Server as HttpServer } from 'http';
 import app from './routes/index.routes';
 import Logger from './helpers/logger';
 import { databaseContainer } from './shared/container';
 
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = Number(process.env.PORT) || 4100;
 
 export default class Server {
   Logger: Logger;
@@ -23,10 +24,17 @@ export default class Server {
         throw new Error('CORS_ORIGIN is required when NODE_ENV=production');
       }
 
-      await databaseContainer.authenticate();
+      const connected = await databaseContainer.authenticate();
+      if (!connected) {
+        this.Logger.error('Database unavailable. API will start without metrics and keep retrying.');
+        databaseContainer.startReconnectLoop();
+      }
 
       this.httpServer = app.listen(PORT, () => {
         this.Logger.info(`Server is running on port ${PORT}`);
+        if (!connected) {
+          this.Logger.info('Serving empty metrics until the database is reachable');
+        }
         if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
           this.Logger.info('Swagger API Docs running at /docs');
         }

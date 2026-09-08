@@ -1,3 +1,4 @@
+import './polyfills/node26';
 import 'dotenv/config';
 import 'reflect-metadata';
 import express from 'express';
@@ -21,7 +22,7 @@ function corsOrigins(): cors.CorsOptions['origin'] {
     return false;
   }
 
-  return ['http://localhost:5173', 'http://localhost:4173'];
+  return ['http://localhost:5174', 'http://localhost:4173'];
 }
 
 const app = express();

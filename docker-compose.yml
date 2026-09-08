@@ -1,0 +1,27 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: datametrics-mssql
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-ArchieDb_12345}"
+      MSSQL_PID: Developer
+    ports:
+      - "${MSSQL_PORT:-1433}:1433"
+    volumes:
+      - datametrics-mssql-data:/var/opt/mssql
+      - ./db:/db:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ArchieDb_12345 -Q "SELECT 1" -C -b || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ArchieDb_12345 -Q "SELECT 1" -C -b'
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 25s
+
+volumes:
+  datametrics-mssql-data:

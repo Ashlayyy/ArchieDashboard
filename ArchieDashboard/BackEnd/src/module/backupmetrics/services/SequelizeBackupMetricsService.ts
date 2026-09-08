@@ -17,6 +17,7 @@ import {
   WeekMetricsResultModel
 } from '../types/Mappers/MetricsMapper';
 import { GridItem } from '../types/GridItem';
+import { emptyMetrics, emptyStatistics } from '../../../helpers/emptyMetrics';
 
 @injectable()
 export default class SequelizeBackupMetricsService implements IBackupMetricsService {
@@ -24,6 +25,15 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
     @inject('BackupMetricsModel') private backupMetricsModel: any,
     @inject('Logger') private readonly Logger: ILogger
   ) {}
+
+  private async withFallback<T>(operation: string, fallback: T, fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (error) {
+      this.Logger.error(`${operation} failed, returning empty data: ${String(error)}`);
+      return fallback;
+    }
+  }
 
   public async metrics(filter: BackupMetricsServiceFilter): Promise<MetricsResultModel> {
     let backupDateOptions = {};
@@ -45,37 +55,42 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
       },
       group: ['BackupDate', 'Type'],
       order: [
-        ['Type', 'DESC'],
-        ['BackupDate', 'DESC']
+        ['Type', 'ASC'],
+        ['BackupDate', 'ASC']
       ]
     };
 
-    const data: MetricsFormat[] = await this.backupMetricsModel.model().findAll(options);
-
-    return mapData(data);
+    return this.withFallback('metrics', emptyMetrics(), async () => {
+      const data: MetricsFormat[] = await this.backupMetricsModel.model().findAll(options);
+      return mapData(data ?? []);
+    });
   }
 
   public async lastDate(filter?: BackupMetricsServiceFilter): Promise<number> {
-    const result: MetricsFormat = await this.backupMetricsModel.model().findOne({
-      attributes: ['BackupDate'],
-      where: {
-        Source: sourceFilter(filter?.companies)
-      },
-      order: [['BackupDate', 'DESC']]
+    return this.withFallback('lastDate', 0, async () => {
+      const result: MetricsFormat | null = await this.backupMetricsModel.model().findOne({
+        attributes: ['BackupDate'],
+        where: {
+          Source: sourceFilter(filter?.companies)
+        },
+        order: [['BackupDate', 'DESC']]
+      });
+      return Number(result?.dataValues?.BackupDate) || 0;
     });
-    return Number(result.dataValues.BackupDate);
   }
 
   public async getLength(filter: BackupMetricsServiceFilter): Promise<number> {
-    const data: MetricsFormat[] = await this.backupMetricsModel.model().findAll({
-      attributes: ['Source'],
-      where: {
-        Source: sourceFilter(filter.companies),
-        BackupDate: await this.lastDate(filter),
-        Type: 'database_size'
-      }
+    return this.withFallback('getLength', 0, async () => {
+      const data: MetricsFormat[] = await this.backupMetricsModel.model().findAll({
+        attributes: ['Source'],
+        where: {
+          Source: sourceFilter(filter.companies),
+          BackupDate: await this.lastDate(filter),
+          Type: 'database_size'
+        }
+      });
+      return data.length;
     });
-    return data.length;
   }
 
   public async getTypes(filter: BackupMetricsServiceFilter): Promise<MetricsTypeResultModel[]> {
@@ -99,6 +114,7 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
       group: ['Type'],
       order: [['Type', 'DESC']]
     };
+    return this.withFallback('getTypes', emptyStatistics().Types, async () => {
     const data: MetricsFormat[] = await this.backupMetricsModel.model().findAll(options);
     let totalSize: number = 0;
     const typesArray: MetricsTypeResultModel[] = [];
@@ -135,17 +151,21 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
     });
 
     return typesArray;
+    });
   }
 
   public async weekMetrics(filter: BackupMetricsServiceFilter): Promise<WeekMetricsResultModel[]> {
-    const lastDate = await this.lastDate(filter);
-    const { sql, replacements } = buildWeekMetricsQuery(filter, lastDate);
-    const data = await this.backupMetricsModel.sequelize.query(sql, { replacements });
+    return this.withFallback('weekMetrics', [], async () => {
+      const lastDate = await this.lastDate(filter);
+      const { sql, replacements } = buildWeekMetricsQuery(filter, lastDate);
+      const data = await this.backupMetricsModel.sequelize.query(sql, { replacements });
 
-    return data[0];
+      return data[0] ?? [];
+    });
   }
 
   public async gridMetrics(): Promise<GridItem[]> {
+    return this.withFallback('gridMetrics', [], async () => {
     const companySearchOptions: FindOptions = {
       attributes: ['Source'],
       where: {
@@ -181,18 +201,21 @@ export default class SequelizeBackupMetricsService implements IBackupMetricsServ
     const companyData: MetricsFormat[] = await this.backupMetricsModel.model().findAll(options);
 
     return mapGridData(companies, companyData);
+    });
   }
 
   async list(): Promise<string[]> {
-    const query = `SELECT DISTINCT Source FROM dbo.BackupMetrics WHERE BackupDate = $1 ORDER BY Source ASC`;
-    const bindOptions = {
-      bind: [await this.lastDate()]
-    };
+    return this.withFallback('list', [], async () => {
+      const query = `SELECT DISTINCT Source FROM dbo.BackupMetrics WHERE BackupDate = $1 ORDER BY Source ASC`;
+      const bindOptions = {
+        bind: [await this.lastDate()]
+      };
 
-    let list = await this.backupMetricsModel.sequelize.query(query, bindOptions);
+      let list = await this.backupMetricsModel.sequelize.query(query, bindOptions);
 
-    list = list[0].map((item: { Source: string }) => item.Source);
+      list = list[0].map((item: { Source: string }) => item.Source);
 
-    return list;
+      return list;
+    });
   }
 }

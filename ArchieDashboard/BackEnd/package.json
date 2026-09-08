@@ -1,7 +1,7 @@
 {
-  "name": "archie_dashboard_api",
+  "name": "datametrics_api",
   "version": "1.0.0",
-  "description": "The API For The Archie Dashboard",
+  "description": "The API for DataMetrics",
   "main": "dist/server.js",
   "scripts": {
     "test": "node -r ts-node/register --test src/helpers/weekMetricsQuery.test.ts src/helpers/sourceFilter.test.ts",

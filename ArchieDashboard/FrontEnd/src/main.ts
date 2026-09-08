@@ -1,5 +1,5 @@
 import 'vuetify/styles';
-import './assets/sass/Archie_Dashboard.scss';
+import './assets/sass/dashboard.scss';
 
 import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
@@ -59,6 +59,19 @@ const i18n = createI18n({
 const vuetify = createVuetify({
   icons: {
     defaultSet: 'mdi'
+  },
+  theme: {
+    defaultTheme: 'light',
+    themes: {
+      light: {
+        colors: {
+          primary: '#0f766e',
+          secondary: '#0f172a',
+          surface: '#ffffff',
+          background: '#eef2f7'
+        }
+      }
+    }
   }
 });
 

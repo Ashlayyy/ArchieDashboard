@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Archie Dashboard API",
+    "title": "DataMetrics API",
     "version": "1.0.0",
     "description": "Authenticated metrics API. Send `Authorization: Bearer <Auth0 access token>` on every `/api` request."
   },
